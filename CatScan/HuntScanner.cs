@@ -61,6 +61,7 @@ public class HuntScanner
 					}
 					else
 					{
+						// XXX: This now appears when using "Import from Clipboard" debug feature
 						DalamudService.Log.Warning($"Received NewEnemy event for a monster we already found. (boss fate aoe dummy issue)");
 					}
 				}
@@ -117,6 +118,7 @@ public class HuntScanner
 
 	private void OnZoneChange(GameZoneInfo zoneInfo)
 	{
+		// XXX: This loses the "missing" kc data -- probably needs to be cached per zone as well
 		_kcEnemies.Clear();
 
 		// Tell GameScanner to scan for enemies if we're in a known hunt zone

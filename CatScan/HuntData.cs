@@ -185,7 +185,6 @@ public static class HuntData
 		)},
 
 	// -- Black Shroud
-		// TODO: Figure out how to determine if an NPC is Odin
 		{148, ARR_Zone("Central Shroud",
 			B("White Joker"), A("Forneus"), S("Laideronnette"), FATE("Odin")
 		)},
@@ -293,4 +292,9 @@ public static class HuntData
 			B("Shockmaw"), B("Yumcax"), A("Petalodus"), A("Gurangatch"), S("Ophioneus")
 		)},
 	};
+
+	// Fates:
+	//  - Steel Reign
+	//  - A Horse Outside
+	//  - todo...
 }

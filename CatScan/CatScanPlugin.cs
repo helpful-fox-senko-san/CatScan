@@ -26,7 +26,7 @@ public sealed class CatScanPlugin : IDisposable
         Scanner = new HuntScanner(_gameScanner);
 
         ConfigWindow = new ConfigWindow();
-        MainWindow = new MainWindow();
+        MainWindow = new MainWindow(_gameScanner);
 
         WindowSystem.AddWindow(CatScanPlugin.ConfigWindow);
         WindowSystem.AddWindow(CatScanPlugin.MainWindow);

@@ -44,12 +44,14 @@ public class GameScanner : IDisposable
     // Off-framework task for timing out enemies that are no longer visible
     private class OffscreenEnemyTask : IDisposable
     {
-        // I wanted to just lock this dictionary as a whole but it didn't
+        // I wanted to just lock this dictionary as a whole but it didn't work right
         private readonly ConcurrentDictionary<uint, int> _offscreenList = new();
         private GameScanner _scanner;
         private CancellationTokenSource _disposalCts = new();
         private Action<uint> _action;
         private System.DateTime _lastTick = System.DateTime.UtcNow;
+
+        public int OffscreenListSize => _offscreenList.Count;
 
         public OffscreenEnemyTask(GameScanner scanner, Action<uint> action)
         {
@@ -73,6 +75,8 @@ public class GameScanner : IDisposable
             }, _disposalCts.Token);
         }
 
+        private List<uint> _removeKeys = new();
+
         public void Tick()
         {
             var now = System.DateTime.UtcNow;
@@ -86,6 +90,7 @@ public class GameScanner : IDisposable
                 if (ot.Value >= 450)
                 {
                     var id = ot.Key;
+                    _removeKeys.Add(ot.Key);
                     _offscreenList[ot.Key] = int.MinValue;
                     _action(id);
                     continue;
@@ -94,6 +99,11 @@ public class GameScanner : IDisposable
                 if (ot.Value >= 0)
                     _offscreenList[ot.Key] = ot.Value + ms;
             }
+
+            foreach (var k in _removeKeys)
+                _offscreenList.Remove(k, out _);
+
+            _removeKeys.Clear();
         }
 
         public void MarkSeen(uint id)
@@ -131,6 +141,7 @@ public class GameScanner : IDisposable
     private ConcurrentQueue<Action> _emitQueue = new();
 
     private int _updateFailCount = 0;
+    private bool _frameworkUpdateRegistered = false;
 
     private double _deltaMs = 0.0;
     private int _nextIdx = 0;
@@ -141,6 +152,15 @@ public class GameScanner : IDisposable
     private bool _betweenAreas = false;
     private bool _territoryChanged = false;
     private bool _scanningEnabled = false;
+
+    // Expose some state for debugging
+    internal int EnemyCacheSize => _enemyCache.Count;
+    internal int LostIdsSize => _lostIds.Count;
+    internal int OffscreenListSize => _offscreenEnemyTask.OffscreenListSize;
+    internal bool BetweenAreas => _betweenAreas;
+    internal bool TerritoryChanged => _territoryChanged;
+    internal bool ScanningEnabled => _scanningEnabled;
+    internal bool FrameworkUpdateRegistered => _frameworkUpdateRegistered;
 
     // Events are queued and emitted as a task to avoid blocking the game while running logic
     private void FlushEmitQueue()
@@ -199,9 +219,9 @@ public class GameScanner : IDisposable
 
     public void Dispose()
     {
+        UnregisterFrameworkUpdate();
         _offscreenEnemyTask.Dispose();
         _disposalCts.Cancel();
-        UnregisterFrameworkUpdate();
         DalamudService.ClientState.Login -= OnLogin;
         DalamudService.ClientState.Logout -= OnLogout;
         DalamudService.ClientState.TerritoryChanged -= OnTerritoryChanged;
@@ -252,18 +272,23 @@ public class GameScanner : IDisposable
     }
 
     // Clear the current zone's information and cached enemy data
-    private void ClearCache()
+    // Can be called from Framework thread OR from UI
+    public void ClearCache()
     {
-        _worldId = -1;
-        _zoneId = -1;
-        _instance = -1;
-        if (_enemyCache.Count > 0)
-        {
-            _enemyCache.Clear();
-            _offscreenEnemyTask.Clear();
-            lock (_lostIds)
-                _lostIds.Clear();
-        }
+        DalamudService.Framework.RunOnFrameworkThread(() => {
+            _territoryChanged = true;
+            _worldId = -1;
+            _zoneId = -1;
+            _instance = -1;
+            if (_enemyCache.Count > 0)
+            {
+                _enemyCache.Clear();
+                _offscreenEnemyTask.Clear();
+                lock (_lostIds)
+                    _lostIds.Clear();
+            }
+            RegisterFrameworkUpdate();
+        });
     }
 
     private void OnLogin()
@@ -291,10 +316,22 @@ public class GameScanner : IDisposable
 
     private void OnConditionChange(ConditionFlag flag, bool value)
     {
-        if (flag == ConditionFlag.BetweenAreas)
+        // Regular BetweenAreas flag is set for teleports within the same zone
+        // BetweenAreas51 is set when travelling between zones or instances, which is exactly what we want
+        if (flag == ConditionFlag.BetweenAreas51)
         {
+            // TerritoryChanged event triggered before BetweenAreas flag was read?
+            // Ignore the condition to avoid shutting off the scanner again
+            if (_territoryChanged && value)
+            {
+                DalamudService.Log.Warning("TerritoryChanged was triggered before BetweenAreas51");
+                value = false;
+            }
+
             _betweenAreas = value;
-            RegisterFrameworkUpdate();
+
+            if (!_betweenAreas)
+                RegisterFrameworkUpdate();
         }
     }
 
@@ -498,8 +535,6 @@ public class GameScanner : IDisposable
             }
         }
     }
-
-    private bool _frameworkUpdateRegistered = false;
 
     private void UnregisterFrameworkUpdate()
     {
