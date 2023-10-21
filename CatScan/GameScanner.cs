@@ -126,7 +126,7 @@ public class GameScanner : IDisposable
     private readonly Dictionary<uint, GameEnemy> _enemyCache = new();
     private readonly HashSet<uint> _lostIds = new();
 
-    // These events are picked up by NpcScanner and processed in to logical events of its own
+    // These events are picked up by HuntScanner and processed in to logical events of its own
     public delegate void NewEnemyDelegate(GameEnemy enemy);
     public delegate void LostEnemyDelegate(GameEnemy enemy);
     public delegate void UpdatedEnemyDelegate(GameEnemy enemy);
@@ -167,7 +167,7 @@ public class GameScanner : IDisposable
     {
         if (_emitQueue.Count == 0)
             return;
-        
+
         Task.Run(() => {
             Action? action;
             while (!_disposalCts.Token.IsCancellationRequested && _emitQueue.TryDequeue(out action))
@@ -239,7 +239,7 @@ public class GameScanner : IDisposable
         }
 
         _instance = uistate->AreaInstance.Instance;
-        
+
         if (_instance < 0 || _instance > 9)
         {
             _instance = -1;
@@ -406,7 +406,7 @@ public class GameScanner : IDisposable
 
                     if (maxHp > 0)
                         hpPct = (float)npc.CurrentHp / (float)maxHp * 100.0f;
-                        
+
                     if (enemy.HpPct != 0.0f && obj.IsDead)
                     {
                         enemy.HpPct = hpPct = 0.0f;
@@ -419,7 +419,7 @@ public class GameScanner : IDisposable
                         dirty = dirty || enemy.Interesting;
                     }
                 }
-                    
+
                 if (enemy.Interesting)
                 {
                     var pos = npc.Position;
@@ -429,7 +429,7 @@ public class GameScanner : IDisposable
                         enemy.X = pos.X;
                         dirty = true;
                     }
-                    
+
                     if (double.Abs(pos.Z - enemy.Z) >= 1.0)
                     {
                         enemy.Z = pos.Z;
@@ -494,7 +494,7 @@ public class GameScanner : IDisposable
 
             if (_territoryChanged || _zoneId < 0)
                 _zoneId = DalamudService.ClientState.TerritoryType;
-            
+
             if (_worldId < 0) UpdateWorldId();
             if (_worldId < 0) return;
 
