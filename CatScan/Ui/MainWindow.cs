@@ -1,9 +1,9 @@
 ﻿using Dalamud.Interface.Windowing;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using System;
 using System.Numerics;
-using System.Text.Json;
 
 namespace CatScan.Ui;
 
@@ -59,7 +59,7 @@ public class MainWindow : Window, IDisposable
 
         ImGui.Text("");
         ImGui.Text($"World {HuntModel.Territory.WorldId}, Zone {HuntModel.Territory.ZoneId}, Instance {HuntModel.Territory.Instance}");
-        
+
         if (ImGui.Button("Copy Model"))
             ImGui.SetClipboardText(HuntModel.Serialize());
         ImGui.SameLine();
@@ -75,9 +75,9 @@ public class MainWindow : Window, IDisposable
     public override void Draw()
     {
         string instanceText = "";
-        if (HuntModel.Territory.Instance != 0)
+        if (HuntModel.Territory.Instance > 0)
             instanceText = " i" + HuntModel.Territory.Instance;
-        ImGui.Text($"Zone: {HuntModel.Territory.ZoneData.Name}{instanceText} on {HuntModel.Territory.WorldName}");
+        ImGuiHelpers.CenteredText($"{HuntModel.Territory.ZoneData.Name}{instanceText}");
 
         using var tabs = ImRaii.TabBar("MainWindowTabs");
         using (var tabItem = ImRaii.TabItem("Scan Results"))
