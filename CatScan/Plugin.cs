@@ -17,6 +17,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private GameScanner _gameScanner { get; set; } = null!;
     public HuntScanner Scanner { get; set; } = null!;
+    public Notifications Notifications { get; set; } = null!;
 
     public Plugin(DalamudPluginInterface pluginInterface)
     {
@@ -25,6 +26,7 @@ public sealed class Plugin : IDalamudPlugin
 
         _gameScanner = new GameScanner();
         Scanner = new HuntScanner(_gameScanner);
+        Notifications = new Notifications(Scanner);
 
         ConfigWindow = new ConfigWindow();
         MainWindow = new MainWindow(_gameScanner);

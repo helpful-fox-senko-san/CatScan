@@ -19,6 +19,11 @@ public class HuntScanner
 	private GameScanner _gameScanner;
 	private Dictionary<uint, KCEnemy> _kcEnemies = new();
 
+	// Event is appropriate to be consumed by notification generators
+    public delegate void NewScanResultDelegate(ScanResult scanResult);
+
+    public event NewScanResultDelegate? NewScanResult;
+
 	public HuntScanner(GameScanner gameScanner)
 	{
 		_gameScanner = gameScanner;
@@ -112,6 +117,7 @@ public class HuntScanner
 				if (HuntModel.ScanResults.TryGetValue(enemy.Name, out var scanResult))
 				{
 					UpdateScanResult(scanResult, enemy);
+					NewScanResult?.Invoke(scanResult);
 				}
 				else
 				{
@@ -122,6 +128,7 @@ public class HuntScanner
 					UpdateScanResult(scanResult, enemy);
 					// Tell GameScanner to continue to poll for information about this enemy
 					enemy.Interesting = true;
+					NewScanResult?.Invoke(scanResult);
 				}
 
 				break;
