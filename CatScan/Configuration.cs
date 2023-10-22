@@ -6,10 +6,10 @@ namespace CatScan;
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-	public int Version { get; set; } = 0;
+    public int Version { get; set; } = 0;
 
-	public void Save()
-	{
-		DalamudService.PluginInterface.SavePluginConfig(this);
-	}
+    public void Save()
+    {
+        DalamudService.PluginInterface.SavePluginConfig(this);
+    }
 }

@@ -12,8 +12,8 @@ public class DalamudService
     [PluginService] public static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] public static IPluginLog Log { get; private set; } = null!;
 
-	public static void Initialize(DalamudPluginInterface pluginInterface)
-	{
-		pluginInterface.Create<DalamudService>();
-	}
+    public static void Initialize(DalamudPluginInterface pluginInterface)
+    {
+        pluginInterface.Create<DalamudService>();
+    }
 }
