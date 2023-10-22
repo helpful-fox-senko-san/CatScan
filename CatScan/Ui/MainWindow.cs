@@ -1,9 +1,14 @@
 ﻿using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Internal; // for IDalamudTextureWrap
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Numerics;
+
+using TerritoryType = Lumina.Excel.GeneratedSheets.TerritoryType;
 
 namespace CatScan.Ui;
 
@@ -11,6 +16,25 @@ public class MainWindow : Window, IDisposable
 {
     // for debugging
     private GameScanner _gameScanner;
+    private string _resourcePath = "";
+
+    private IDalamudTextureWrap? _iconB;
+    private IDalamudTextureWrap? _iconA;
+    private IDalamudTextureWrap? _iconS;
+    private IDalamudTextureWrap? _iconF;
+
+    private static Vector4 RGB(float r, float g, float b)
+    {
+        return new Vector4(r / 255.0f, g / 255.0f, b / 255.0f, 255.0f);
+    }
+
+    private Vector4 _textColorPulled = RGB(192, 32, 32);
+    private Vector4 _textColorDead = RGB(160, 96, 96);
+    private Vector4 _textColorGone = RGB(160, 160, 160);
+
+    private Vector4 _textColorKc = RGB(160, 192, 224);
+
+    private Dictionary<int, uint> _territoryToMapId = new();
 
     public MainWindow(GameScanner gameScanner) : base("CatScan",
         ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -21,30 +45,130 @@ public class MainWindow : Window, IDisposable
             MinimumSize = new Vector2(300, 300),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
+
+        var territoryData = DalamudService.DataManager.GetExcelSheet<TerritoryType>();
+
+        if (territoryData != null)
+        {
+            foreach (var z in HuntData.Zones)
+            {
+                var row = territoryData.GetRow((uint)z.Key);
+
+                if (row != null)
+                    _territoryToMapId.Add(z.Key, row.Map.Row);
+            }
+        }
+
+        _resourcePath = Path.Combine(DalamudService.PluginInterface.AssemblyLocation.Directory?.FullName!, "Resources");
+
+        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "B.png")).ContinueWith(icon => {
+            _iconB = icon.Result;
+        });
+
+        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "A.png")).ContinueWith(icon => {
+            _iconA = icon.Result;
+        });
+
+        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "S.png")).ContinueWith(icon => {
+            _iconS = icon.Result;
+        });
+
+        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "F.png")).ContinueWith(icon => {
+            _iconF = icon.Result;
+        });
     }
 
     public void Dispose()
     {
     }
 
+    private void DrawRankIcon(Rank rank)
+    {
+        var icon = _iconS;
+
+        switch (rank)
+        {
+            case Rank.B:
+            case Rank.Minion:
+                icon = _iconB;
+                break;
+
+            case Rank.A:
+                icon = _iconA;
+                break;
+
+            case Rank.FATE:
+                icon = _iconF;
+                break;
+        }
+
+        if (icon != null)
+            ImGui.Image(icon.ImGuiHandle, new(24, 24));
+        else
+            ImGui.Text("");
+    }
+
     private void DrawScanResults()
     {
+        using var table = ImRaii.Table("ScanResultsTable", 2);
+        ImGui.TableSetupColumn("icon", ImGuiTableColumnFlags.WidthFixed);
+        ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
+
         foreach (var r in HuntModel.ScanResults.Values)
         {
-            var statusText = "";
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            DrawRankIcon(r.Rank);
+
+            ImGui.TableNextColumn();
+            ImGui.AlignTextToFramePadding();
+
+            Vector4 color = Vector4.Zero;
             if (r.Dead)
-                statusText = " DEAD";
+                color = _textColorDead;
             else if (r.Missing)
-                statusText = " MISSING";
-            ImGui.Text($"[{r.Rank}] {r.Name} - HP:{r.HpPct:F1}%% - Pos:{r.MapX:F1},{r.MapY:F1}{statusText}");
+                color = _textColorGone;
+            else if (r.HpPct < 100.0)
+                color = _textColorPulled;
+
+            using (ImRaii.PushColor(ImGuiCol.Text, color, color != Vector4.Zero))
+            {
+                if (ImGui.Selectable($"{r.Name} ( {r.MapX:F1} , {r.MapY:F1} ) HP: {r.HpPct:F1}%"))
+                {
+                    if (_territoryToMapId.TryGetValue(HuntModel.Territory.ZoneId, out var mapId))
+                    {
+                        var mapPayload = new Dalamud.Game.Text.SeStringHandling.Payloads.MapLinkPayload(
+                            (uint)HuntModel.Territory.ZoneId, mapId, r.MapX, r.MapY
+                        );
+                        DalamudService.GameGui.OpenMapWithMapLink(mapPayload);
+                    }
+                    else
+                    {
+                        DalamudService.Log.Error("Data missing to generate map link");
+                    }
+                }
+            }
         }
     }
 
     private void DrawKillCounts()
     {
+        using var table = ImRaii.Table("KillCountsTable", 2);
+        ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn("kills", ImGuiTableColumnFlags.WidthFixed);
+
         foreach (var r in HuntModel.KillCountLog)
         {
-            ImGui.Text($"{r.Key} - {r.Value.Killed} killed + {r.Value.Missing} missing");
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text($"{r.Key}");
+            ImGui.TableNextColumn();
+            ImGui.AlignTextToFramePadding();
+            using (ImRaii.PushColor(ImGuiCol.Text, _textColorKc))
+            {
+                ImGui.Text($"{r.Value.Killed} ～ {r.Value.Killed+r.Value.Missing}");
+            }
         }
     }
 
