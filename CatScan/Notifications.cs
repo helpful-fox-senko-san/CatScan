@@ -8,7 +8,6 @@ public class Notifications
 {
     private HuntScanner _huntScanner;
     private string _resourcePath = "";
-    private WaveOutEvent _waveOut = new();
 
     private class CachedSample
     {
@@ -51,7 +50,7 @@ public class Notifications
         PreloadSfx("ping3.wav");
     }
 
-    private void PlaySfx(string filename)
+    public void PlaySfx(string filename)
     {
         if (!_cachedWavFiles.TryGetValue(filename, out var cachedSample))
             cachedSample = PreloadSfx(filename);
@@ -63,49 +62,41 @@ public class Notifications
         }
 
         var waveStream = cachedSample.MakeStream();
-        var waveChannel = new WaveChannel32(waveStream, 0.6f, 0.0f);
-        _waveOut.Init(waveChannel);
-        _waveOut.Play();
-        _waveOut.PlaybackStopped += (object? sender, StoppedEventArgs args) => {
+        var waveOut = new WaveOutEvent();
+        waveOut.Init(waveStream);
+        waveOut.Volume = Plugin.Configuration.SoundVolume;
+        waveOut.Play();
+        DalamudService.Log.Error($"Playing {filename} at vol {Plugin.Configuration.SoundVolume}");
+        waveOut.PlaybackStopped += (object? sender, StoppedEventArgs args) => {
+            DalamudService.Log.Error($"Stopping {filename}");
             waveStream.Close();
-            _waveOut.Dispose();
+            waveOut.Dispose();
             waveStream.Dispose();
         };
-    }
 
-    private void NotifyS()
-    {
-        PlaySfx("ping3.wav");
-    }
-
-    private void NotifyA()
-    {
-        PlaySfx("ping2.wav");
-    }
-
-    private void NotifyB()
-    {
-        PlaySfx("ping1.wav");
     }
 
     public void OnNewScanResult(ScanResult scanResult)
     {
-        switch (scanResult.Rank)
-        {
-            case Rank.FATE:
-            case Rank.SS:
-            case Rank.S:
-                NotifyS();
-                break;
+        string? sfx = null;
 
-            case Rank.A:
-                NotifyA();
-                break;
+        if (!Plugin.Configuration.SoundEnabled)
+            return;
 
-            case Rank.Minion:
-            case Rank.B:
-                NotifyB();
-                break;
-        }
+        if (scanResult.Rank == Rank.FATE && Plugin.Configuration.SoundAlertFATE)
+            sfx = "ping3.wav";
+        else if (scanResult.Rank == Rank.SS && Plugin.Configuration.SoundAlertS)
+            sfx = "ping3.wav";
+        else if (scanResult.Rank == Rank.S && Plugin.Configuration.SoundAlertS)
+            sfx = "ping3.wav";
+        else if (scanResult.Rank == Rank.A && Plugin.Configuration.SoundAlertA)
+            sfx = "ping2.wav";
+        else if (scanResult.Rank == Rank.B && Plugin.Configuration.SoundAlertB)
+            sfx = "ping1.wav";
+        else if (scanResult.Rank == Rank.Minion && Plugin.Configuration.SoundAlertMinions)
+            sfx = "ping1.wav";
+
+        if (sfx != null)
+            PlaySfx(sfx);
     }
 }
