@@ -254,7 +254,7 @@ public static class HuntData
 			B("La Velue"), B("Itzpapalotl"), A("Nariphon"), A("Nuckelavee"), S("Tyger")
 		)},
 		{814, ShB_Zone("Kholusia",
-			B("Coquecigrue"), B("Indomitable"), A("Huracan"), A("Li'l Murderer"), S("Forgiven Pedantry"), FATE("Formidible")
+			B("Coquecigrue"), B("Indomitable"), A("Huracan"), A("Li'l Murderer"), S("Forgiven Pedantry"), FATE("Formidable")
 		)},
 		{815, ShB_Zone("Amh Araeng",
 			B("Worm of the Well"), B("Juggler Hecatomb"), A("Maliktender"), A("Sugaar"), S("Tarchia")

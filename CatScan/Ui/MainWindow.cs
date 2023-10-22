@@ -31,7 +31,12 @@ public class MainWindow : Window, IDisposable
     {
         foreach (var r in HuntModel.ScanResults.Values)
         {
-            ImGui.Text($"[{r.Rank}] {r.Name} - HP:{r.HpPct:F1}%% - Pos:{r.MapX:F1},{r.MapY:F1}{(!r.InRange?" MISSING":"")}{(r.Dead?" DEAD":"")}");
+            var statusText = "";
+            if (r.Dead)
+                statusText = " DEAD";
+            else if (r.Missing)
+                statusText = " MISSING";
+            ImGui.Text($"[{r.Rank}] {r.Name} - HP:{r.HpPct:F1}%% - Pos:{r.MapX:F1},{r.MapY:F1}{statusText}");
         }
     }
 
@@ -55,7 +60,7 @@ public class MainWindow : Window, IDisposable
             if (ImGui.Button("Force Enable Scanner"))
                 _gameScanner.EnableScanning();
         }
-        ImGui.Text($"  - EnemyCache:{_gameScanner.EnemyCacheSize}, Lost:{_gameScanner.LostIdsSize}, Visible:{_gameScanner.OffscreenListSize}");
+        ImGui.Text($"  - EnemyCache:{_gameScanner.EnemyCacheSize}, Lost:{_gameScanner.LostIdsSize}");
 
         ImGui.Text("");
         ImGui.Text($"World {HuntModel.Territory.WorldId}, Zone {HuntModel.Territory.ZoneId}, Instance {HuntModel.Territory.Instance}");
@@ -77,7 +82,10 @@ public class MainWindow : Window, IDisposable
         string instanceText = "";
         if (HuntModel.Territory.Instance > 0)
             instanceText = " i" + HuntModel.Territory.Instance;
-        ImGuiHelpers.CenteredText($"{HuntModel.Territory.ZoneData.Name}{instanceText}");
+        string zoneName = HuntModel.Territory.ZoneData.Name;
+        if (zoneName.Substring(0, 1) == "#")
+            zoneName = $"Zone {zoneName}";
+        ImGuiHelpers.CenteredText($"{zoneName}{instanceText}");
 
         using var tabs = ImRaii.TabBar("MainWindowTabs");
         using (var tabItem = ImRaii.TabItem("Scan Results"))
