@@ -131,7 +131,8 @@ static class HuntModel
     public static void SwitchZone(int worldId, int zoneId, int instance)
     {
         // Determine if there's any meaningful data stored for this zone, otherwise erase it from memory entirely when leaving the zone
-        if (Territory.IsValid())
+        // Ignore the case where we're switching to the zone we're already in
+        if (Territory.IsValid() && (worldId != Territory.WorldId || zoneId != Territory.ZoneId || instance != Territory.Instance))
         {
             bool hasData = (ScanResults.Count > 0);
 
