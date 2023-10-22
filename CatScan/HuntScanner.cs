@@ -65,13 +65,6 @@ public class HuntScanner
     // Apply dynamic data from a scanned GameEnemy on to an existing Scan Result
     private void UpdateScanResult(ScanResult scanResult, GameEnemy gameEnemy)
     {
-        // If the enemy was missing, it must be re-marked as Interesting to the GameScanner
-        if (scanResult.Missing)
-        {
-            gameEnemy.Interesting = true;
-            scanResult.Missing = false;
-        }
-
         // name and rank are never updated
         scanResult.RawX = gameEnemy.X;
         scanResult.RawZ = gameEnemy.Z;
@@ -114,10 +107,13 @@ public class HuntScanner
 
                 // New object ID with the same name as an already logged mark
                 // This is either a respawn, a bug, or in the case of SS minions: expected
+                // ... oops, this can also happen when entering a zone with a saved scan list
                 if (HuntModel.ScanResults.TryGetValue(enemy.Name, out var scanResult))
                 {
                     UpdateScanResult(scanResult, enemy);
                     NewScanResult?.Invoke(scanResult);
+                    // This needs to be marked Interesting unconditionally
+                    enemy.Interesting = true;
                 }
                 else
                 {
@@ -159,7 +155,7 @@ public class HuntScanner
         {
             if (kcEnemy.Missing)
             {
-                // If the enemy was missing, it must be re-marked as Interesting to the GameScanner
+                // If the enemy was missing, it needs to be be re-marked as Interesting to the GameScanner
                 enemy.InterestingKC = true;
                 kcEnemy.Missing = false;
                 --kcLogEntry.Missing;
@@ -173,7 +169,16 @@ public class HuntScanner
         }
 
         if (HuntModel.ScanResults.TryGetValue(enemy.Name, out var scanResult))
+        {
+            // If the enemy was missing, it needs to be be re-marked as Interesting to the GameScanner
+            if (scanResult.Missing)
+            {
+                enemy.Interesting = true;
+                scanResult.Missing = false;
+            }
+
             UpdateScanResult(scanResult, enemy);
+        }
     }
 
     private void OnZoneChange(GameZoneInfo zoneInfo)
