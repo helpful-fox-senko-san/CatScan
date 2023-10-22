@@ -29,6 +29,62 @@ public class HuntScanner
 		_gameScanner.ZoneChange += OnZoneChange;
 	}
 
+	private static float ToMapOrd(float raw, float offset, float scale)
+	{
+		raw = raw * scale;
+		return ((41.0f / scale) * ((raw + 1024.0f) / 2048.0f)) + 1.0f - offset;
+	}
+
+	private void KilledSS()
+	{
+		// Clear out both minion scan results and kill count data after an SS is killed
+		foreach (var mark in HuntModel.Territory.ZoneData.Marks)
+		{
+			if (mark.Rank == Rank.KC)
+			{
+				if (HuntModel.KillCountLog.TryGetValue(mark.Name, out var kcLogEntry))
+				{
+					kcLogEntry.Killed = 0;
+					kcLogEntry.Missing = 0;
+				}
+			}
+			else if (mark.Rank == Rank.Minion)
+			{
+				HuntModel.ScanResults.Remove(mark.Name);
+			}
+		}
+
+		_kcEnemies.Clear();
+	}
+
+	// Apply dynamic data from a scanned GameEnemy on to an existing Scan Result
+	private void UpdateScanResult(ScanResult scanResult, GameEnemy gameEnemy)
+	{
+		// If the enemy was missing, it must be re-marked as Interesting to the GameScanner
+		if (scanResult.Missing)
+		{
+			gameEnemy.Interesting = true;
+			scanResult.Missing = false;
+		}
+
+		// name and rank are never updated
+		scanResult.RawX = gameEnemy.X;
+		scanResult.RawZ = gameEnemy.Z;
+		scanResult.MapX = ToMapOrd(gameEnemy.X, HuntModel.Territory.ZoneData.MapParams.OffsetX, HuntModel.Territory.ZoneData.MapParams.Scale);
+		scanResult.MapY = ToMapOrd(gameEnemy.Z, HuntModel.Territory.ZoneData.MapParams.OffsetZ, HuntModel.Territory.ZoneData.MapParams.Scale);
+
+		scanResult.lastSeenTimeUtc = HuntModel.UtcNow;
+
+		if (scanResult.HpPct != 0.0 && gameEnemy.HpPct == 0.0)
+		{
+			scanResult.killTimeUtc = HuntModel.UtcNow;
+			if (scanResult.Rank == Rank.SS)
+				KilledSS();
+		}
+
+		scanResult.HpPct = gameEnemy.HpPct;
+	}
+
 	private void OnNewEnemy(GameEnemy enemy)
 	{
 		foreach (var mark in HuntModel.Territory.ZoneData.Marks)
@@ -40,7 +96,8 @@ public class HuntScanner
 				{
 					if (_kcEnemies.ContainsKey(enemy.ObjectId))
 					{
-						DalamudService.Log.Error($"Received NewEnemy event for the same object id twice.");
+						DalamudService.Log.Warning($"Received NewEnemy event for the same object id twice.");
+						OnUpdatedEnemy(enemy);
 						break;
 					}
 
@@ -50,24 +107,19 @@ public class HuntScanner
 					break;
 				}
 
-				if (HuntModel.ScanResults.ContainsKey(enemy.Name))
+				// New object ID with the same name as an already logged mark
+				// This is either a respawn, a bug, or in the case of SS minions: expected
+				if (HuntModel.ScanResults.TryGetValue(enemy.Name, out var scanResult))
 				{
-					// New object ID with the same name as an already logged mark
-					if (HuntModel.ScanResults[enemy.Name].PossiblyDead)
-					{
-						// Probably a respawn
-						HuntModel.ScanResults[enemy.Name].Update(enemy);
-						enemy.Interesting = true;
-					}
-					else
-					{
-						// XXX: This now appears when using "Import from Clipboard" debug feature
-						DalamudService.Log.Warning($"Received NewEnemy event for a monster we already found. (boss fate aoe dummy issue)");
-					}
+					UpdateScanResult(scanResult, enemy);
 				}
 				else
 				{
-					HuntModel.ScanResults.Add(mark.Name, new ScanResult(mark, enemy));
+					HuntModel.ScanResults.Add(mark.Name, scanResult = new ScanResult(){
+						Rank = mark.Rank,
+						Name = enemy.Name
+					});
+					UpdateScanResult(scanResult, enemy);
 					// Tell GameScanner to continue to poll for information about this enemy
 					enemy.Interesting = true;
 				}
@@ -80,45 +132,55 @@ public class HuntScanner
 	private void OnLostEnemy(GameEnemy enemy)
 	{
 		// Its not possible to tell if a KC mob dies while out of range, so keep count of them
-		if (_kcEnemies.ContainsKey(enemy.ObjectId))
+		if (_kcEnemies.TryGetValue(enemy.ObjectId, out var kcEnemy) && HuntModel.KillCountLog.TryGetValue(enemy.Name, out var kcLogEntry))
 		{
-			if (!_kcEnemies[enemy.ObjectId].Missing && HuntModel.KillCountLog.ContainsKey(enemy.Name))
+			if (!kcEnemy.Missing)
 			{
-				_kcEnemies[enemy.ObjectId].Missing = true;
-				++HuntModel.KillCountLog[enemy.Name].Missing;
+				kcEnemy.Missing = true;
+				++kcLogEntry.Missing;
 			}
 		}
 
-		if (HuntModel.ScanResults.ContainsKey(enemy.Name))
-			HuntModel.ScanResults[enemy.Name].Lost();
+		if (HuntModel.ScanResults.TryGetValue(enemy.Name, out var scanResult))
+			scanResult.Missing = true;
 	}
 
 	private void OnUpdatedEnemy(GameEnemy enemy)
 	{
 		// This is a KC mob dying or coming back in range
-		if (_kcEnemies.ContainsKey(enemy.ObjectId))
+		if (_kcEnemies.TryGetValue(enemy.ObjectId, out var kcEnemy) && HuntModel.KillCountLog.TryGetValue(enemy.Name, out var kcLogEntry))
 		{
-			if (_kcEnemies[enemy.ObjectId].Missing && HuntModel.KillCountLog.ContainsKey(enemy.Name))
+			if (kcEnemy.Missing)
 			{
-				_kcEnemies[enemy.ObjectId].Missing = false;
-				--HuntModel.KillCountLog[enemy.Name].Missing;
+				// If the enemy was missing, it must be re-marked as Interesting to the GameScanner
+				enemy.InterestingKC = true;
+				kcEnemy.Missing = false;
+				--kcLogEntry.Missing;
 			}
 
 			if (enemy.HpPct == 0.0)
 			{
-				if (HuntModel.KillCountLog.ContainsKey(enemy.Name))
-					++HuntModel.KillCountLog[enemy.Name].Killed;
+				++kcLogEntry.Killed;
 				_kcEnemies.Remove(enemy.ObjectId);
 			}
 		}
 
-		if (HuntModel.ScanResults.ContainsKey(enemy.Name))
-			HuntModel.ScanResults[enemy.Name].Update(enemy);
+		if (HuntModel.ScanResults.TryGetValue(enemy.Name, out var scanResult))
+			UpdateScanResult(scanResult, enemy);
 	}
 
 	private void OnZoneChange(GameZoneInfo zoneInfo)
 	{
-		// XXX: This loses the "missing" kc data -- probably needs to be cached per zone as well
+		// Roll back the Missing count for the currently tracked lost enemies before clearing the list
+		foreach (var kcEnemy in _kcEnemies.Values)
+		{
+			if (kcEnemy.Missing)
+			{
+				if (HuntModel.KillCountLog.TryGetValue(kcEnemy.Name, out var kcLogEntry))
+					--kcLogEntry.Missing;
+			}
+		}
+
 		_kcEnemies.Clear();
 
 		// Tell GameScanner to scan for enemies if we're in a known hunt zone

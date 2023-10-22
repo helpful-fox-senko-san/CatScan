@@ -30,6 +30,11 @@ public class HuntTerritory
 
 		return cachedZoneData;
 	}
+
+	public bool IsValid()
+	{
+		return ZoneId >= 0;
+	}
 }
 
 public class ScanResult
@@ -41,59 +46,23 @@ public class ScanResult
 	public float MapX;
 	public float MapY;
 	public float HpPct;
-	[JsonIgnore] public bool InRange;
+	[JsonIgnore] public bool Missing;
 
 	public bool Dead => (HpPct == 0.0);
 	public bool Pulled => (HpPct < 100.0);
 
-	public bool PossiblyDead => Dead || !InRange;
+	public bool PossiblyDead => Dead || Missing;
 
 	public System.DateTime lastSeenTimeUtc;
 	public System.DateTime killTimeUtc;
 
-	System.TimeSpan lastSeenAgo => InRange ? System.TimeSpan.Zero : HuntModel.UtcNow - lastSeenTimeUtc;
+	System.TimeSpan lastSeenAgo => Missing ? HuntModel.UtcNow - lastSeenTimeUtc : System.TimeSpan.Zero;
 	System.TimeSpan killTimeAgo => Dead ? HuntModel.UtcNow - killTimeUtc : System.TimeSpan.Zero;
-
-	private static float ToMapOrd(float raw, float offset, float scale)
-	{
-		raw = raw * scale;
-		return ((41.0f / scale) * ((raw + 1024.0f) / 2048.0f)) + 1.0f - offset;
-	}
-
-	// Convert a GameEnemy from the GameScanner service in to a hunt model scan result
-	public ScanResult(Mark mark, GameEnemy gameEnemy)
-	{
-		Rank = mark.Rank;
-		Name = gameEnemy.Name;
-		Update(gameEnemy);
-	}
 
 	[JsonConstructor]
 	public ScanResult()
 	{
 		Name = "";
-	}
-
-	public void Update(GameEnemy gameEnemy)
-	{
-		// name and id are never updated
-		RawX = gameEnemy.X;
-		RawZ = gameEnemy.Z;
-		MapX = ToMapOrd(gameEnemy.X, HuntModel.Territory.ZoneData.MapParams.OffsetX, HuntModel.Territory.ZoneData.MapParams.Scale);
-		MapY = ToMapOrd(gameEnemy.Z, HuntModel.Territory.ZoneData.MapParams.OffsetZ, HuntModel.Territory.ZoneData.MapParams.Scale);
-		InRange = true;
-
-		lastSeenTimeUtc = HuntModel.UtcNow;
-
-		if (HpPct != 0.0 && gameEnemy.HpPct == 0.0)
-			killTimeUtc = HuntModel.UtcNow;
-
-		HpPct = gameEnemy.HpPct;
-	}
-
-	public void Lost()
-	{
-		InRange = false;
 	}
 }
 
@@ -134,8 +103,7 @@ public class ZoneCacheEntry
 
 static class HuntModel
 {
-	// This will be updated once a second by HuntScanner's periodic task
-	public static System.DateTime UtcNow;
+	public static System.DateTime UtcNow => System.DateTime.UtcNow;
 
 	// Static information about the current zone
 	public static HuntTerritory Territory = new();
@@ -162,6 +130,27 @@ static class HuntModel
 
 	public static void SwitchZone(int worldId, int zoneId, int instance)
 	{
+		// Determine if there's any meaningful data stored for this zone, otherwise erase it from memory entirely when leaving the zone
+		if (Territory.IsValid())
+		{
+			bool hasData = (ScanResults.Count > 0);
+
+			if (!hasData)
+			{
+				foreach (var e in KillCountLog.Values)
+				{
+					if (e.Killed > 0 || e.Missing > 0)
+					{
+						hasData = true;
+						break;
+					}
+				}
+			}
+
+			if (!hasData)
+				ZoneCache.Remove(new ZoneCacheKey(Territory.WorldId, Territory.ZoneId, Territory.Instance).ToString());
+		}
+
 		Territory.WorldId = worldId;
 		Territory.ZoneId = zoneId;
 		Territory.Instance = instance;
@@ -211,14 +200,16 @@ static class HuntModel
 		opt.IgnoreReadOnlyProperties = true;
 		var data = JsonSerializer.Deserialize(json, typeof(Dictionary<string, ZoneCacheEntry>), opt) as Dictionary<string, ZoneCacheEntry>;
 
+		ZoneCache.Clear();
+
 		if (data != null)
 		{
 			foreach (var r in data)
-				ZoneCache[r.Key] = r.Value;
+				ZoneCache.Add(r.Key, r.Value);
 		}
 
 		// Update the current zone reference
-		if (Territory.ZoneId >= 0)
+		if (Territory.IsValid())
 			SwitchZone(Territory.WorldId, Territory.ZoneId, Territory.Instance);
 	}
 }

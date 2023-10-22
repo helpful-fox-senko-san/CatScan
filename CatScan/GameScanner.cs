@@ -36,93 +36,15 @@ public class GameEnemy
     public bool Interesting = false;
     // Set this instead to only poll for death
     public bool InterestingKC = false;
+
+    // Milliseconds since the enemy was last seen in the object table
+    // Since the table is scanned progressively, this will fluctuate between approximately 0-100ms
+    public double OffscreenTimeMS = 0.0;
 }
 
 // Scans the game state for the current zone and visible enemies
 public class GameScanner : IDisposable
 {
-    // Off-framework task for timing out enemies that are no longer visible
-    private class OffscreenEnemyTask : IDisposable
-    {
-        // I wanted to just lock this dictionary as a whole but it didn't work right
-        private readonly ConcurrentDictionary<uint, int> _offscreenList = new();
-        private GameScanner _scanner;
-        private CancellationTokenSource _disposalCts = new();
-        private Action<uint> _action;
-        private System.DateTime _lastTick = System.DateTime.UtcNow;
-
-        public int OffscreenListSize => _offscreenList.Count;
-
-        public OffscreenEnemyTask(GameScanner scanner, Action<uint> action)
-        {
-            _scanner = scanner;
-            _action = action;
-
-            Task.Run(async () => {
-                while (!_disposalCts.IsCancellationRequested)
-                {
-                    try
-                    {
-                        Tick();
-                    }
-                    catch (Exception ex)
-                    {
-                        DalamudService.Log.Error(ex, "OffscreenEnemyTask");
-                    }
-
-                    await Task.Delay(100);
-                }
-            }, _disposalCts.Token);
-        }
-
-        private List<uint> _removeKeys = new();
-
-        public void Tick()
-        {
-            var now = System.DateTime.UtcNow;
-            var interval = now - _lastTick;
-            var ms = (int)interval.TotalMilliseconds;
-            _lastTick = now;
-
-            foreach (var ot in _offscreenList)
-            {
-                // Consider an enemy gone once its been off-screen for about 500ms
-                if (ot.Value >= 450)
-                {
-                    var id = ot.Key;
-                    _removeKeys.Add(ot.Key);
-                    _offscreenList[ot.Key] = int.MinValue;
-                    _action(id);
-                    continue;
-                }
-
-                if (ot.Value >= 0)
-                    _offscreenList[ot.Key] = ot.Value + ms;
-            }
-
-            foreach (var k in _removeKeys)
-                _offscreenList.Remove(k, out _);
-
-            _removeKeys.Clear();
-        }
-
-        public void MarkSeen(uint id)
-        {
-            _offscreenList[id] = 0;
-        }
-
-        public void Clear()
-        {
-            _offscreenList.Clear();
-        }
-
-        public void Dispose()
-        {
-            _disposalCts.Cancel();
-        }
-    };
-
-    private OffscreenEnemyTask _offscreenEnemyTask;
     private readonly Dictionary<uint, GameEnemy> _enemyCache = new();
     private readonly HashSet<uint> _lostIds = new();
 
@@ -156,22 +78,55 @@ public class GameScanner : IDisposable
     // Expose some state for debugging
     internal int EnemyCacheSize => _enemyCache.Count;
     internal int LostIdsSize => _lostIds.Count;
-    internal int OffscreenListSize => _offscreenEnemyTask.OffscreenListSize;
     internal bool BetweenAreas => _betweenAreas;
     internal bool TerritoryChanged => _territoryChanged;
     internal bool ScanningEnabled => _scanningEnabled;
     internal bool FrameworkUpdateRegistered => _frameworkUpdateRegistered;
 
+    private bool _emitTaskActive = false;
+    private TaskCompletionSource _emitTaskPokeSource = new();
+
     // Events are queued and emitted as a task to avoid blocking the game while running logic
+    // Called from Framework thread, so uses a Task to emit events to avoid excessive work on the Framework thread
     private void FlushEmitQueue()
     {
-        if (_emitQueue.Count == 0)
-            return;
+        if (_emitQueue.Count == 0 || _emitTaskActive)
+        {
+            // Task is active, poke it to do work
+            if (_emitQueue.Count > 0)
+                _emitTaskPokeSource.TrySetResult();
 
-        Task.Run(() => {
-            Action? action;
-            while (!_disposalCts.Token.IsCancellationRequested && _emitQueue.TryDequeue(out action))
-                action();
+            return;
+        }
+
+        _emitTaskActive = true;
+
+        Task.Run(async () => {
+            var isDisposed = () => _disposalCts.Token.IsCancellationRequested;
+
+            while (!isDisposed())
+            {
+                while (!isDisposed() && _emitQueue.TryDequeue(out var action))
+                    action();
+
+                bool poked = false;
+
+                // Try to keep the task alive for a while to avoid creating/destroying it repeatedly
+                await Task.WhenAny(Task.Delay(1000, _disposalCts.Token), _emitTaskPokeSource.Task);
+
+                // We were poked to process new events
+                if (_emitTaskPokeSource.Task.IsCompleted)
+                {
+                    poked = true;
+                    _emitTaskPokeSource = new();
+                }
+
+                // We weren't poked and the queue is empty, time to exit
+                if (!poked && _emitQueue.Count == 0)
+                    break;
+            }
+
+            _emitTaskActive = false;
         }, _disposalCts.Token);
     }
 
@@ -206,8 +161,6 @@ public class GameScanner : IDisposable
 
 		// Trigger an initial update based on the current territory
         _territoryChanged = true;
-
-        _offscreenEnemyTask = new(this, OnEnemyGone);
     }
 
     // This should be called in response to a ZoneChange event to enable object scanning
@@ -220,7 +173,6 @@ public class GameScanner : IDisposable
     public void Dispose()
     {
         UnregisterFrameworkUpdate();
-        _offscreenEnemyTask.Dispose();
         _disposalCts.Cancel();
         DalamudService.ClientState.Login -= OnLogin;
         DalamudService.ClientState.Logout -= OnLogout;
@@ -280,13 +232,8 @@ public class GameScanner : IDisposable
             _worldId = -1;
             _zoneId = -1;
             _instance = -1;
-            if (_enemyCache.Count > 0)
-            {
-                _enemyCache.Clear();
-                _offscreenEnemyTask.Clear();
-                lock (_lostIds)
-                    _lostIds.Clear();
-            }
+            _enemyCache.Clear();
+            _lostIds.Clear();
             RegisterFrameworkUpdate();
         });
     }
@@ -299,12 +246,15 @@ public class GameScanner : IDisposable
 
     private void OnLogout()
     {
-        EmitZoneChange(new GameZoneInfo(){
-            WorldId = _worldId,
-            ZoneId = _zoneId,
-            Instance = _instance,
-            WorldName = _worldName
-        });
+        if (_zoneId >= 0)
+        {
+            EmitZoneChange(new GameZoneInfo(){
+                WorldId = _worldId,
+                ZoneId = _zoneId,
+                Instance = _instance,
+                WorldName = _worldName
+            });
+        }
         UnregisterFrameworkUpdate();
     }
 
@@ -335,34 +285,140 @@ public class GameScanner : IDisposable
         }
     }
 
-    private void OnEnemyGone(uint id)
+    // Called by ScanTick in Framework thread
+    // Creates a cache entry for a battle NPC, (optionally) emits a NewEnemy event, and returns the cache entry
+    private GameEnemy DoNewEnemy(BattleNpc bnpc, uint id, bool wasLost = false)
     {
-        lock(_lostIds)
-            _lostIds.Add(id);
+        // New enemy
+        var pos = bnpc.Position;
+        var hpPct = 100.0f;
+        var maxHp = bnpc.MaxHp;
 
-        if (_enemyCache.ContainsKey(id) && !_enemyCache[id].Ignore)
-            EmitLostEnemy(_enemyCache[id]);
+        if (maxHp > 0)
+            hpPct = (float)bnpc.CurrentHp / (float)maxHp * 100.0f;
+
+        string? customName = null;
+
+        // HACK: Odin uses a player's name, but can be identified by its ID
+        if (bnpc.DataId == 882)
+            customName = "Odin";
+
+        var newEnemy = new GameEnemy(){
+            ObjectId = id,
+            Name = customName ?? bnpc.Name.ToString(),
+            X = pos.X,
+            Z = pos.Z,
+            HpPct = hpPct,
+            Ignore = false // Obsolete: Was used to try flag FATE boss AoEs before
+        };
+
+        _enemyCache.Add(id, newEnemy);
+
+        // Do not emit a new enemy event if this was an already known but lost enemy -- instead DoUpdateEnemy will emit an event
+        if (!wasLost)
+            EmitNewEnemy(newEnemy);
+
+        return newEnemy;
     }
 
-    // DoFrameworkUpdate - zone ID is complete and scanning is enabled
+    // Called by ScanTick in Framework thread
+    // Updates or re-creates a cache entry from a battle NPC, (optionally) emits an UpdatedEnemy event, and returns the cache entry
+    // The enemy parameter may be null, in which case DoNewEnemy() is called to insert a new cache entry
+    private GameEnemy DoUpdateEnemy(BattleNpc bnpc, uint id, GameEnemy? cachedEnemy)
+    {
+        var dirty = false;
+
+        // If cachedEnemy is null, then it was lost and needs its cache entry to be re-created
+        if (cachedEnemy == null)
+        {
+            cachedEnemy = DoNewEnemy(bnpc, id, true);
+            // If the NPC was signalled as lost, re-signal it as updated even if nothing changes
+            dirty = true;
+        }
+
+        // Check for death of both hunt marks and KC mobs
+        if (cachedEnemy.HpPct != 0.0f && (cachedEnemy.Interesting || cachedEnemy.InterestingKC))
+        {
+            var hpPct = 100.0f;
+            var maxHp = bnpc.MaxHp;
+
+            if (maxHp > 0)
+                hpPct = (float)bnpc.CurrentHp / (float)maxHp * 100.0f;
+
+            bool isDead = false;
+
+            if (hpPct == 0.0f || bnpc.IsDead)
+            {
+                isDead = true;
+            }
+            else if (hpPct < 1.0f && cachedEnemy.Name == "Archaeotania")
+            {
+                // HACK: Godzilla doesn't die but ends the fight at low HP
+                isDead = true;
+            }
+
+            if (cachedEnemy.HpPct != 0.0f && isDead)
+            {
+                cachedEnemy.HpPct = hpPct = 0.0f;
+                dirty = true;
+            }
+
+            if (double.Abs(hpPct - cachedEnemy.HpPct) >= 0.1)
+            {
+                cachedEnemy.HpPct = hpPct;
+                dirty = dirty || cachedEnemy.Interesting;
+            }
+        }
+
+        // Check the position of hunt marks (KC mobs don't need their position tracked)
+        if (cachedEnemy.Interesting)
+        {
+            var pos = bnpc.Position;
+
+            if (double.Abs(pos.X - cachedEnemy.X) >= 1.0)
+            {
+                cachedEnemy.X = pos.X;
+                dirty = true;
+            }
+
+            if (double.Abs(pos.Z - cachedEnemy.Z) >= 1.0)
+            {
+                cachedEnemy.Z = pos.Z;
+                dirty = true;
+            }
+        }
+
+        if (dirty)
+            EmitUpdatedEnemy(cachedEnemy);
+
+        return cachedEnemy;
+    }
+
+    // Called in Framework thread while zone ID is complete and scanning is enabled
     private void ScanTick()
     {
-        // Accumulate time if the update fails for a temporary reason
-        _deltaMs += System.Math.Clamp(DalamudService.Framework.UpdateDelta.TotalMilliseconds, 1.0, 100.0);
-
-        if (double.IsNaN(_deltaMs))
-            _deltaMs = 100.0;
-
-        // Process a portion of the object table each update, to reach a target of one full scan per 100ms
-        const double targetMs = 100.0;
         int tableLen = DalamudService.ObjectTable.Length;
+        int n = 20;
 
-        // Number of table entries to process
-        int n = (int)System.Math.Round((_deltaMs / targetMs) * tableLen);
+        // Only scan a portion of the object table each frame, to reduce the time spent per frame
+        // This is based on the frame time to try guarantee at least 10 full table scans per second.
+        {
+            // Process a portion of the object table each update, to reach a target of one full scan per 100ms
+            const double targetMs = 100.0;
 
-        // Limit to one full table scan per update
-        // Also ensure some reasonable minimum amount of progress is made per frame
-        n = System.Math.Clamp(n, 10, tableLen);
+            // Accumulate time if the update fails for a temporary reason
+            _deltaMs += System.Math.Clamp(DalamudService.Framework.UpdateDelta.TotalMilliseconds, 1.0, targetMs);
+
+            if (double.IsNaN(_deltaMs))
+                _deltaMs = targetMs;
+
+            // Number of table entries to process
+            n = (int)System.Math.Round((_deltaMs / targetMs) * tableLen);
+
+            // Limit to one full table scan per update
+            // Also ensure some reasonable minimum amount of progress is made per frame
+            n = System.Math.Clamp(n, 20, tableLen);
+        }
 
         int i = 0;
 
@@ -382,93 +438,56 @@ public class GameScanner : IDisposable
             if (obj == null)
                 continue;
 
-            var npc = (obj as BattleNpc);
+            var bnpc = (obj as BattleNpc);
 
-            if (npc == null || npc.BattleNpcKind != BattleNpcSubKind.Enemy)
+            if (bnpc == null || bnpc.BattleNpcKind != BattleNpcSubKind.Enemy)
                 continue;
 
             var id = obj.ObjectId;
-            _offscreenEnemyTask.MarkSeen(id);
 
-            if (_enemyCache.ContainsKey(id))
+            if (_enemyCache.TryGetValue(id, out var cachedEnemy))
             {
-                // Update existing enemy
-                var enemy = _enemyCache[id];
-                var dirty = _lostIds.Contains(id);
-
-                if (dirty)
-                    _lostIds.Remove(id);
-
-                if (enemy.Interesting || enemy.InterestingKC)
-                {
-                    var hpPct = 100.0f;
-                    var maxHp = npc.MaxHp;
-
-                    if (maxHp > 0)
-                        hpPct = (float)npc.CurrentHp / (float)maxHp * 100.0f;
-
-                    if (enemy.HpPct != 0.0f && obj.IsDead)
-                    {
-                        enemy.HpPct = hpPct = 0.0f;
-                        dirty = true;
-                    }
-
-                    if (double.Abs(hpPct - enemy.HpPct) >= 0.1)
-                    {
-                        enemy.HpPct = hpPct;
-                        dirty = dirty || enemy.Interesting;
-                    }
-                }
-
-                if (enemy.Interesting)
-                {
-                    var pos = npc.Position;
-
-                    if (double.Abs(pos.X - enemy.X) >= 1.0)
-                    {
-                        enemy.X = pos.X;
-                        dirty = true;
-                    }
-
-                    if (double.Abs(pos.Z - enemy.Z) >= 1.0)
-                    {
-                        enemy.Z = pos.Z;
-                        dirty = true;
-                    }
-                }
-
-                if (dirty && !enemy.Ignore)
-                    EmitUpdatedEnemy(enemy);
+                // Mark existing enemy as being seen
+                cachedEnemy.OffscreenTimeMS = 0.0f;
+                DoUpdateEnemy(bnpc, id, cachedEnemy);
             }
             else
             {
-                // New enemy
-                var pos = npc.Position;
-                var hpPct = 100.0f;
-                var maxHp = npc.MaxHp;
+                // This seems to be a temporary condition for legitimate monsters
+                // They will appear as targetable NPCs in a different slot shortly after
+                // This condition should also filter out FATE boss AoEs from ever being detected as real enemies
+                if (!bnpc.IsTargetable)
+                    continue;
 
-                if (maxHp > 0)
-                    hpPct = (float)npc.CurrentHp / (float)maxHp * 100.0f;
+                if (_lostIds.Contains(id))
+                {
+                    DoUpdateEnemy(bnpc, id, null);
+                    // The enemy is no longer lost, so remove it from the list
+                    _lostIds.Remove(id);
+                }
+                else
+                {
+                    DoNewEnemy(bnpc, id);
+                }
+            }
+        }
 
-                string? customName = null;
+        // Scan the enemy cache for off-screen enemies to mark as lost
+        foreach (var entry in _enemyCache)
+        {
+            var cachedEnemy = entry.Value;
 
-                if (obj.DataId == 882)
-                    customName = "Odin";
+            cachedEnemy.OffscreenTimeMS += _deltaMs;
 
-                var newEnemy = new GameEnemy(){
-                    ObjectId = id,
-                    Name = customName ?? npc.Name.ToString(),
-                    X = pos.X,
-                    Z = pos.Z,
-                    HpPct = hpPct,
-                    // TODO: How can I reliably detect boss fate aoe dummy objects?
-                    Ignore = (npc.Level < 2 || npc.MaxHp < 2)
-                };
-
-                _enemyCache.Add(id, newEnemy);
-
-                if (!newEnemy.Ignore)
-                    EmitNewEnemy(newEnemy);
+            // Consider an enemy as lost once it hasn't been seen for 500ms
+            if (cachedEnemy.OffscreenTimeMS >= 500.0)
+            {
+                // We don't need to track IDs for non-hunt / non-kc NPCs
+                if (cachedEnemy.Interesting || cachedEnemy.InterestingKC)
+                    _lostIds.Add(entry.Key);
+                _enemyCache.Remove(entry.Key);
+                EmitLostEnemy(cachedEnemy);
+                break;
             }
         }
 
@@ -522,17 +541,13 @@ public class GameScanner : IDisposable
             return;
         }
 
-        if (Monitor.TryEnter(_lostIds))
+        try
         {
-            try
-            {
-                ScanTick();
-            }
-            finally
-            {
-                Monitor.Exit(_lostIds);
-                FlushEmitQueue();
-            }
+            ScanTick();
+        }
+        finally
+        {
+            FlushEmitQueue();
         }
     }
 
@@ -556,7 +571,11 @@ public class GameScanner : IDisposable
     {
         // Stop running after 20 consecutive exceptions
         if (_updateFailCount > 20)
+        {
+            DalamudService.Log.Error("Stopping scanner due to too many errors");
+            UnregisterFrameworkUpdate();
             return;
+        }
 
         try
         {
