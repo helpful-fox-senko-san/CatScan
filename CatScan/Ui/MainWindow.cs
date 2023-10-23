@@ -109,17 +109,65 @@ public class MainWindow : Window, IDisposable
             ImGui.Text("");
     }
 
+    private void DoMapLink(float mapX, float mapY)
+    {
+        if (_territoryToMapId.TryGetValue(HuntModel.Territory.ZoneId, out var mapId))
+        {
+            DalamudService.Framework.RunOnFrameworkThread(() => {
+                var mapPayload = new Dalamud.Game.Text.SeStringHandling.Payloads.MapLinkPayload(
+                    (uint)HuntModel.Territory.ZoneId, mapId, mapX, mapY
+                );
+                DalamudService.GameGui.OpenMapWithMapLink(mapPayload);
+            });
+        }
+        else
+        {
+            DalamudService.Log.Error("Data missing to generate map link");
+        }
+    }
+
     private void DrawScanResults()
     {
-        if (HuntModel.ScanResults.Count == 0)
+        if (HuntModel.ScanResults.Count == 0 && HuntModel.ActiveFates.Count == 0 && !_gameScanner.ScanningEnabled)
         {
+            using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
             ImGui.Text("");
-            if (!_gameScanner.ScanningEnabled)
-            {
-                using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
-                ImGuiHelpers.CenteredText("Scanner disabled in this zone.");
-            }
+            ImGuiHelpers.CenteredText("Scanner disabled in this zone.");
             return;
+        }
+
+        // We only expect one interesting fate to ever be active in a zone at the time
+        if (HuntModel.ActiveFates.Count > 0)
+        {
+            using var pushFateTableBorderColor1 = ImRaii.PushColor(ImGuiCol.TableBorderLight, RGB(96, 16, 96));
+            using var pushFateTableBorderColor2 = ImRaii.PushColor(ImGuiCol.TableBorderStrong, RGB(96, 16, 96));
+            using var pushFateTableBgColor = ImRaii.PushColor(ImGuiCol.TableRowBg, RGB(96, 16, 96));
+            using var pushFateTableAltBgColor = ImRaii.PushColor(ImGuiCol.TableRowBgAlt, RGB(112, 20, 112));
+            using var pushColorFate1 = ImRaii.PushColor(ImGuiCol.HeaderHovered, RGB(128, 24, 128));
+            using var pushColorFate2 = ImRaii.PushColor(ImGuiCol.HeaderActive, RGB(128, 24, 128));
+            using var fateTable = ImRaii.Table("FateTable", 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders);
+            ImGui.TableSetupColumn("fate", ImGuiTableColumnFlags.WidthStretch);
+            foreach (var f in HuntModel.ActiveFates.Values)
+            {
+                var str = f.Name;
+                var timeRemaining = f.TimeRemaining;
+                if (f.Running)
+                {
+                    // The fate has ended so it should not be visible anymore
+                    if (timeRemaining <= TimeSpan.Zero)
+                        timeRemaining = TimeSpan.Zero;
+
+                    var mins = timeRemaining.TotalMinutes.ToString("0");
+                    var secs = timeRemaining.Seconds.ToString("00");
+                    str += $" ({mins}:{secs})";
+                }
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                if (ImGui.Selectable("##clickableFate:" + f.Name, false, ImGuiSelectableFlags.AllowItemOverlap))
+                    DoMapLink(f.MapX, f.MapY);
+                ImGui.SameLine();
+                ImGuiHelpers.CenteredText(str);
+            }
         }
 
         using var table = ImRaii.Table("ScanResultsTable", 2);
@@ -158,19 +206,7 @@ public class MainWindow : Window, IDisposable
             using var pushColor2 = ImRaii.PushColor(ImGuiCol.HeaderHovered, RGB(48, 48, 48));
             using var pushColor3 = ImRaii.PushColor(ImGuiCol.HeaderActive, RGB(64, 64, 64));
             if (ImGui.Selectable($"{r.Name} ( {r.MapX:F1} , {r.MapY:F1} ) HP: {r.HpPct:F1}%"))
-            {
-                if (_territoryToMapId.TryGetValue(HuntModel.Territory.ZoneId, out var mapId))
-                {
-                    var mapPayload = new Dalamud.Game.Text.SeStringHandling.Payloads.MapLinkPayload(
-                        (uint)HuntModel.Territory.ZoneId, mapId, r.MapX, r.MapY
-                    );
-                    DalamudService.GameGui.OpenMapWithMapLink(mapPayload);
-                }
-                else
-                {
-                    DalamudService.Log.Error("Data missing to generate map link");
-                }
-            }
+                DoMapLink(r.MapX, r.MapY);
         }
     }
 
@@ -294,6 +330,7 @@ public class MainWindow : Window, IDisposable
                 _gameScanner.EnableScanning();
         }
         ImGui.Text($"  - EnemyCache:{_gameScanner.EnemyCacheSize}, Lost:{_gameScanner.LostIdsSize}");
+        ImGui.Text($"  - FateCache:{_gameScanner.FateCacheSize}");
 
         ImGui.Text("");
         ImGui.Text($"World {HuntModel.Territory.WorldId}, Zone {HuntModel.Territory.ZoneId}, Instance {HuntModel.Territory.Instance}");

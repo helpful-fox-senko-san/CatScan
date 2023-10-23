@@ -31,6 +31,8 @@ public class HuntScanner
         _gameScanner.NewEnemy += OnNewEnemy;
         _gameScanner.LostEnemy += OnLostEnemy;
         _gameScanner.UpdatedEnemy += OnUpdatedEnemy;
+        _gameScanner.NewOrUpdatedFate += OnFate;
+        _gameScanner.LostFate += OnLostFate;
         _gameScanner.ZoneChange += OnZoneChange;
     }
 
@@ -71,16 +73,31 @@ public class HuntScanner
         scanResult.MapX = ToMapOrd(gameEnemy.X, HuntModel.Territory.ZoneData.MapParams.OffsetX, HuntModel.Territory.ZoneData.MapParams.Scale);
         scanResult.MapY = ToMapOrd(gameEnemy.Z, HuntModel.Territory.ZoneData.MapParams.OffsetZ, HuntModel.Territory.ZoneData.MapParams.Scale);
 
-        scanResult.lastSeenTimeUtc = HuntModel.UtcNow;
+        scanResult.LastSeenTimeUtc = HuntModel.UtcNow;
 
         if (scanResult.HpPct != 0.0 && gameEnemy.HpPct == 0.0)
         {
-            scanResult.killTimeUtc = HuntModel.UtcNow;
+            scanResult.KillTimeUtc = HuntModel.UtcNow;
             if (scanResult.Rank == Rank.SS)
                 KilledSS();
         }
 
         scanResult.HpPct = gameEnemy.HpPct;
+    }
+
+    // Apply dynamic data from a scanned GameFate on to an existing Fate
+    private void UpdateActiveFate(ActiveFate activeFate, GameFate gameFate)
+    {
+        activeFate.RawX = gameFate.X;
+        activeFate.RawZ = gameFate.Z;
+        activeFate.MapX = ToMapOrd(gameFate.X, HuntModel.Territory.ZoneData.MapParams.OffsetX, HuntModel.Territory.ZoneData.MapParams.Scale);
+        activeFate.MapY = ToMapOrd(gameFate.Z, HuntModel.Territory.ZoneData.MapParams.OffsetZ, HuntModel.Territory.ZoneData.MapParams.Scale);
+
+        if (gameFate.State != Dalamud.Game.ClientState.Fates.FateState.Preparation)
+        {
+            activeFate.EndTimeUtc = gameFate.EndTimeUtc ?? System.DateTime.MinValue;
+            activeFate.Running = true;
+        }
     }
 
     private void OnNewEnemy(GameEnemy enemy)
@@ -148,6 +165,40 @@ public class HuntScanner
             scanResult.Missing = true;
     }
 
+    private void OnFate(GameFate fate)
+    {
+        // Update to an already recorded FATE
+        if (HuntModel.ActiveFates.TryGetValue(fate.Name, out var activeFate))
+        {
+            UpdateActiveFate(activeFate, fate);
+        }
+        else
+        {
+            // New fate -- only care if its a world boss fate
+            if (HuntData.EpicFates.Contains(fate.Name))
+            {
+                activeFate = new ActiveFate(){
+                    Name = fate.Name
+                };
+                HuntModel.ActiveFates.Add(fate.Name, activeFate);
+                UpdateActiveFate(activeFate, fate);
+
+                // XXX: This is the only epic boss fate that doesn't spawn with the boss initially present
+                if (fate.Name == "Long Live the Coeurl")
+                {
+                    if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertFATE)
+                        Plugin.Notifications.PlaySfx("ping3.wav");
+                }
+            }
+        }
+    }
+
+    private void OnLostFate(GameFate fate)
+    {
+        // If Eureka support is added this would be a good place to clear the kill count for an NM
+        HuntModel.ActiveFates.Remove(fate.Name);
+    }
+
     private void OnUpdatedEnemy(GameEnemy enemy)
     {
         // This is a KC mob dying or coming back in range
@@ -181,9 +232,30 @@ public class HuntScanner
         }
     }
 
+    // Apply dynamic data from a scanned GameEnemy on to an existing Scan Result
+    private void UpdateFate(ScanResult scanResult, GameEnemy gameEnemy)
+    {
+        // name and rank are never updated
+        scanResult.RawX = gameEnemy.X;
+        scanResult.RawZ = gameEnemy.Z;
+        scanResult.MapX = ToMapOrd(gameEnemy.X, HuntModel.Territory.ZoneData.MapParams.OffsetX, HuntModel.Territory.ZoneData.MapParams.Scale);
+        scanResult.MapY = ToMapOrd(gameEnemy.Z, HuntModel.Territory.ZoneData.MapParams.OffsetZ, HuntModel.Territory.ZoneData.MapParams.Scale);
+
+        scanResult.LastSeenTimeUtc = HuntModel.UtcNow;
+
+        if (scanResult.HpPct != 0.0 && gameEnemy.HpPct == 0.0)
+        {
+            scanResult.KillTimeUtc = HuntModel.UtcNow;
+            if (scanResult.Rank == Rank.SS)
+                KilledSS();
+        }
+
+        scanResult.HpPct = gameEnemy.HpPct;
+    }
+
     private void OnZoneChange(GameZoneInfo zoneInfo)
     {
-        // Roll back the Missing count for the currently tracked lost enemies before clearing the list
+        // Roll back the Missing count for the currently tracked lost enemies
         foreach (var kcEnemy in _kcEnemies.Values)
         {
             if (kcEnemy.Missing)
@@ -194,6 +266,12 @@ public class HuntScanner
         }
 
         _kcEnemies.Clear();
+
+        // Clear the active fate list
+        HuntModel.ActiveFates.Clear();
+
+        // Clear non-A rank monsters
+        //todo...
 
         // Tell GameScanner to scan for enemies if we're in a known hunt zone
         if (HuntData.Zones.ContainsKey(zoneInfo.ZoneId))
