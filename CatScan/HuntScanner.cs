@@ -136,7 +136,8 @@ public class HuntScanner
                 {
                     HuntModel.ScanResults.Add(mark.Name, scanResult = new ScanResult(){
                         Rank = mark.Rank,
-                        Name = enemy.Name
+                        Name = enemy.Name,
+                        Missing = false
                     });
                     UpdateScanResult(scanResult, enemy);
                     // Tell GameScanner to continue to poll for information about this enemy
