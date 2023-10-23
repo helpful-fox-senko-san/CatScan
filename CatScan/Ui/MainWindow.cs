@@ -269,7 +269,8 @@ public class MainWindow : Window, IDisposable
 
             if (ImGui.IsItemDeactivatedAfterEdit())
             {
-                Plugin.Notifications.PlaySfx("ping3.wav");
+                if (Plugin.Configuration.SoundEnabled)
+                    Plugin.Notifications.PlaySfx("ping1.wav");
                 Plugin.Configuration.Save();
             }
 
@@ -363,8 +364,9 @@ public class MainWindow : Window, IDisposable
         string instanceText = "";
         if (HuntModel.Territory.Instance > 0)
             instanceText = " i" + HuntModel.Territory.Instance;
-        string zoneName = HuntModel.Territory.ZoneData.Name;
-        if (zoneName.Substring(0, 1) == "#")
+        // FIXME: There should not be a null dereference here...
+        string zoneName = HuntModel.Territory.ZoneData.Name ?? string.Empty;
+        if (zoneName.Length > 0 && zoneName.Substring(0, 1) == "#")
             zoneName = $"Zone {zoneName}";
         ImGuiHelpers.CenteredText($"{zoneName}{instanceText}");
 
