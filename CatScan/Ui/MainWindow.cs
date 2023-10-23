@@ -126,7 +126,16 @@ public class MainWindow : Window, IDisposable
         ImGui.TableSetupColumn("icon", ImGuiTableColumnFlags.WidthFixed);
         ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
 
-        foreach (var r in HuntModel.ScanResults.Values)
+        var resultList = new List<ScanResult>(HuntModel.ScanResults.Values);
+
+        resultList.Sort((ScanResult a, ScanResult b) => {
+            if (a.Rank == b.Rank)
+                return a.Name.CompareTo(b.Name);
+            else
+                return b.Rank - a.Rank;
+        });
+
+        foreach (var r in resultList)
         {
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
