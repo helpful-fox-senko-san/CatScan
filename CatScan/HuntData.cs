@@ -9,7 +9,8 @@ public enum Expansion
     HW,
     SB,
     ShB,
-    EW
+    EW,
+    Eureka
 }
 
 public enum Rank
@@ -135,6 +136,12 @@ public static class HuntData
         m2[marks.Length] = SS("Ker");
         m2[marks.Length + 1] = Minion("Ker Shroud");
         return new Zone(Expansion.EW, name, instances, m2);
+    }
+
+
+    private static Zone Eureka_Zone(string name, params Mark[] marks)
+    {
+        return new Zone(Expansion.Eureka, name, 9, marks);
     }
 
     // -- Shorthand overloads for uninstanced maps
@@ -291,6 +298,70 @@ public static class HuntData
         {961, EW_Zone("Elpis",
             B("Shockmaw"), B("Yumcax"), A("Petalodus"), A("Gurangatch"), S("Ophioneus")
         )},
+
+    // -- Eureka
+        {732, Eureka_Zone("Eureka Anemos",
+            A("Sabodenter Corrido"), S("The Lord of Anemos"), S("Teles"),
+            S("The Emperor of Anemos"), S("Callisto"), S("Number"),
+            S("Jahannam"), S("Amemet"), S("Caym"),
+            S("Bombadeel"), S("Serket"), S("Judgmental Julika"),
+            S("The White Rider"), S("Polyphemus"), S("Simurgh's Strider"),
+            S("King Hazmat"), S("Fafnir"), S("Amarok"),
+            S("Lamashtu"), S("Pazuzu"),
+
+            KC("Flowering Sabotender"), KC("Sea Bishop"), KC("Anemos Harpeia"),
+            KC("Darner"), KC("Val Bear"), KC("Pneumaflayer"),
+            KC("Typhoon Sprite"), KC("Abraxas"), KC("Stalker Ziz"),
+            KC("Traveling Gourmand"), KC("Khor Claw"), KC("Henbane"),
+            KC("Duskfall Dullahan"), KC("Monoeye"), KC("Old World Zu"),
+            KC("Anemos Anala"), KC("Fossil Dragon"), KC("Voidscale"),
+            KC("Val Specter"), KC("Shadow Wraith")
+        )},
+
+        {763, Eureka_Zone("Eureka Pagos",
+            S("The Snow Queen"), S("Taxim"), S("Ash Dragon"),
+            S("Glavoid"), S("Anapos"), S("Hakutaku"),
+            S("King Igloo"), S("Asag"), S("Surabhi"),
+            S("King Arthro"), S("Mindertaur"), S("Holy Cow"),
+            S("Hadhayosh"), S("Horus"), S("Arch Angra Mainyu"),
+            S("Copycat Cassie"), S("Louhi"),
+
+            KC("Yukinko"), KC("Demon of the Incunable"), KC("Blood Demon"),
+            KC("Val Worm"), KC("Snowmelt Sprite"), KC("Blubber Eyes"),
+            KC("Huwasi"), KC("Wandering Open"), KC("Pagos Billygoat"),
+            KC("Val Snipper"), KC("Lab Minotaur"), KC("Elder Buffalo"),
+            KC("Lesser Void Dragon"), KC("Void Vouivre"), KC("Gawper"),
+            KC("Ameretat"), KC("Val Corpse")
+        )},
+
+        {795, Eureka_Zone("Eureka Pyros",
+            S("Leucosia"), S("Flauros"), S("The Sophist"),
+            S("Graffiacane"), S("Askalaphos"), S("Grand Duke Batym"),
+            S("Aetolus"), S("Lesath"), S("Eldthurs"),
+            S("Iris"), S("Lamebrix Strikebocks"), S("Dux"),
+            S("Lumber Jack"), S("Glaukopis"), S("Ying-Yang"),
+            S("Skoll"), S("Penthesilea"),
+
+            KC("Pyros Bhoot"), KC("Thunderstorm Sprite"), KC("Pyros Apanda"),
+            KC("Valking"), KC("Overdue Tome"), KC("Dark Troubadour"),
+            KC("Islandhander"), KC("Bird Eater"), KC("Pyros Crab"),
+            KC("Northern Swallow"), KC("Illuminati Escapee"), KC("Matanga Castaway"),
+            KC("Pyros Treant"), KC("Val Skatene"), KC("Pyros Hecteyes"),
+            KC("Pyros Shuck"), KC("Val Bloodglider")
+        )},
+
+        {827, Eureka_Zone("Eureka Hydatos",
+            S("Khalamari"), S("Stegodon"), S("Molech"),
+            S("Piasa"), S("Frostmane"), S("Daphne"),
+            S("King Goldemar"), S("Leuke"), S("Barong"),
+            S("Ceto"), S("Provenance Watcher"),
+            S("Ovni"), S("Tristitia"),
+
+            KC("Xzomit"), KC("Hydatos Primelephas"), KC("Val Nullchu"),
+            KC("Vivid Gastornis"), KC("Northern Tiger"), KC("Dark Void Monk"),
+            KC("Hydatos Wraith"), KC("Tigerhawk"), KC("Laboratory Lion"),
+            KC("Hydatos Delphyne"), KC("Crystal Claw")
+        )},
     };
 
     public readonly static HashSet<string> EpicFates = new HashSet<string>{
@@ -303,6 +374,10 @@ public static class HuntData
         "The Head, the Tail, the Whole Damned Thing",
         "A Finale Most Formidable",
         "Devout Pilgrims vs. Daivadipa",
-        "Omicron Recall: Killing Order"
+        "Omicron Recall: Killing Order",
+
+        // Should the Eureka NM fates all be added here too?
+        // Support fate needs to be added at least, since it spawns with no boss
+        "The Baldesion Arsenal: Expedition Support"
     };
 }
