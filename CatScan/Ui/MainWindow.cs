@@ -111,6 +111,17 @@ public class MainWindow : Window, IDisposable
 
     private void DrawScanResults()
     {
+        if (HuntModel.ScanResults.Count == 0)
+        {
+            ImGui.Text("");
+            if (!_gameScanner.ScanningEnabled)
+            {
+                using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
+                ImGuiHelpers.CenteredText("Scanner disabled in this zone.");
+            }
+            return;
+        }
+
         using var table = ImRaii.Table("ScanResultsTable", 2);
         ImGui.TableSetupColumn("icon", ImGuiTableColumnFlags.WidthFixed);
         ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
@@ -132,21 +143,23 @@ public class MainWindow : Window, IDisposable
             else if (r.HpPct < 100.0)
                 color = _textColorPulled;
 
-            using (ImRaii.PushColor(ImGuiCol.Text, color, color != Vector4.Zero))
+
+            using var pushColor1 = ImRaii.PushColor(ImGuiCol.Text, color, color != Vector4.Zero);
+            // The default hover colors are too intense
+            using var pushColor2 = ImRaii.PushColor(ImGuiCol.HeaderHovered, RGB(48, 48, 48));
+            using var pushColor3 = ImRaii.PushColor(ImGuiCol.HeaderActive, RGB(64, 64, 64));
+            if (ImGui.Selectable($"{r.Name} ( {r.MapX:F1} , {r.MapY:F1} ) HP: {r.HpPct:F1}%"))
             {
-                if (ImGui.Selectable($"{r.Name} ( {r.MapX:F1} , {r.MapY:F1} ) HP: {r.HpPct:F1}%"))
+                if (_territoryToMapId.TryGetValue(HuntModel.Territory.ZoneId, out var mapId))
                 {
-                    if (_territoryToMapId.TryGetValue(HuntModel.Territory.ZoneId, out var mapId))
-                    {
-                        var mapPayload = new Dalamud.Game.Text.SeStringHandling.Payloads.MapLinkPayload(
-                            (uint)HuntModel.Territory.ZoneId, mapId, r.MapX, r.MapY
-                        );
-                        DalamudService.GameGui.OpenMapWithMapLink(mapPayload);
-                    }
-                    else
-                    {
-                        DalamudService.Log.Error("Data missing to generate map link");
-                    }
+                    var mapPayload = new Dalamud.Game.Text.SeStringHandling.Payloads.MapLinkPayload(
+                        (uint)HuntModel.Territory.ZoneId, mapId, r.MapX, r.MapY
+                    );
+                    DalamudService.GameGui.OpenMapWithMapLink(mapPayload);
+                }
+                else
+                {
+                    DalamudService.Log.Error("Data missing to generate map link");
                 }
             }
         }
@@ -154,6 +167,14 @@ public class MainWindow : Window, IDisposable
 
     private void DrawKillCounts()
     {
+        if (HuntModel.KillCountLog.Count == 0)
+        {
+            ImGui.Text("");
+            using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
+            ImGuiHelpers.CenteredText("No kill count in this zone.");
+            return;
+        }
+
         using var table = ImRaii.Table("KillCountsTable", 2);
         ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableSetupColumn("kills", ImGuiTableColumnFlags.WidthFixed);
@@ -168,7 +189,10 @@ public class MainWindow : Window, IDisposable
             ImGui.AlignTextToFramePadding();
             using (ImRaii.PushColor(ImGuiCol.Text, _textColorKc))
             {
-                ImGui.Text($"{r.Value.Killed} ～ {r.Value.Killed+r.Value.Missing}");
+                if (Plugin.Configuration.ShowMissingKC)
+                    ImGui.Text($" {r.Value.Killed} ～ {r.Value.Killed+r.Value.Missing} ");
+                else
+                    ImGui.Text($" {r.Value.Killed} ");
             }
         }
     }
@@ -245,7 +269,7 @@ public class MainWindow : Window, IDisposable
             Plugin.Configuration.Save();
         }
 
-        ImGui.TextWrapped("Keeps track of mobs that are no longer visible to you. Can estimate a possible kill count range when you are not killing alone.");
+        ImGui.TextWrapped("Keeps track of mobs that are no longer visible to you. Use to estimate a possible kill count range when you are not killing alone.");
     }
 
     private void DrawDebug()
