@@ -1,4 +1,5 @@
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Fates;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
@@ -42,21 +43,40 @@ public class GameEnemy
     public double OffscreenTimeMS = 0.0;
 }
 
+public class GameFate
+{
+    public uint FateId;
+    public string Name = string.Empty;
+    // raw world coordinates
+    public float X;
+    public float Z;
+    public FateState State;
+    public System.DateTime? EndTimeUtc;
+
+    // Milliseconds since the fate was last seen in the fate table
+    public double OffscreenTimeMS = 0.0;
+}
+
 // Scans the game state for the current zone and visible enemies
 public class GameScanner : IDisposable
 {
     private readonly Dictionary<uint, GameEnemy> _enemyCache = new();
+    private readonly Dictionary<uint, GameFate> _fateCache = new();
     private readonly HashSet<uint> _lostIds = new();
 
     // These events are picked up by HuntScanner and processed in to logical events of its own
     public delegate void NewEnemyDelegate(GameEnemy enemy);
     public delegate void LostEnemyDelegate(GameEnemy enemy);
     public delegate void UpdatedEnemyDelegate(GameEnemy enemy);
+    public delegate void NewOrUpdatedFateDelegate(GameFate fate);
+    public delegate void LostFateDelegate(GameFate fate);
     public delegate void ZoneChangeDelegate(GameZoneInfo zoneInfo);
 
     public event NewEnemyDelegate? NewEnemy;
     public event LostEnemyDelegate? LostEnemy;
     public event UpdatedEnemyDelegate? UpdatedEnemy;
+    public event NewOrUpdatedFateDelegate? NewOrUpdatedFate;
+    public event LostFateDelegate? LostFate;
     public event ZoneChangeDelegate? ZoneChange;
 
     private CancellationTokenSource _disposalCts = new();
@@ -77,6 +97,7 @@ public class GameScanner : IDisposable
 
     // Expose some state for debugging
     internal int EnemyCacheSize => _enemyCache.Count;
+    internal int FateCacheSize => _fateCache.Count;
     internal int LostIdsSize => _lostIds.Count;
     internal bool BetweenAreas => _betweenAreas;
     internal bool TerritoryChanged => _territoryChanged;
@@ -145,9 +166,20 @@ public class GameScanner : IDisposable
         _emitQueue.Enqueue(() => { UpdatedEnemy?.Invoke(enemy); });
     }
 
+    private void EmitFate(GameFate fate)
+    {
+        _emitQueue.Enqueue(() => { NewOrUpdatedFate?.Invoke(fate); });
+    }
+
+    private void EmitLostFate(GameFate fate)
+    {
+        _emitQueue.Enqueue(() => { LostFate?.Invoke(fate); });
+    }
+
     private void EmitZoneChange(GameZoneInfo zoneInfo)
     {
         // Zone changes are critical and infrequent, just emit them directly
+        _emitQueue.Clear();
         Task.Run(() => { ZoneChange?.Invoke(zoneInfo); });
     }
 
@@ -233,6 +265,7 @@ public class GameScanner : IDisposable
             _zoneId = -1;
             _instance = -1;
             _enemyCache.Clear();
+            _fateCache.Clear();
             _lostIds.Clear();
             RegisterFrameworkUpdate();
         });
@@ -406,12 +439,6 @@ public class GameScanner : IDisposable
             // Process a portion of the object table each update, to reach a target of one full scan per 100ms
             const double targetMs = 100.0;
 
-            // Accumulate time if the update fails for a temporary reason
-            _deltaMs += System.Math.Clamp(DalamudService.Framework.UpdateDelta.TotalMilliseconds, 1.0, targetMs);
-
-            if (double.IsNaN(_deltaMs))
-                _deltaMs = targetMs;
-
             // Number of table entries to process
             n = (int)System.Math.Round((_deltaMs / targetMs) * tableLen);
 
@@ -490,8 +517,94 @@ public class GameScanner : IDisposable
                 break;
             }
         }
+    }
 
-        _deltaMs = 0.0;
+    // Called in Framework thread while zone ID is complete and scanning is enabled
+    private void ScanFateTick()
+    {
+        foreach (var fate in DalamudService.FateTable)
+        {
+            var id = fate.FateId;
+            var state = fate.State;
+
+            if (_fateCache.TryGetValue(id, out var cachedFate))
+            {
+                if (state == FateState.WaitingForEnd || state == FateState.Ended)
+                {
+                    _fateCache.Remove(id);
+                    EmitLostFate(cachedFate);
+                    continue;
+                }
+
+                // Mark existing fate as being seen
+                cachedFate.OffscreenTimeMS = 0.0f;
+
+                // We don't check for or update the fate position here, because the only fates we're interested in never move
+
+                if (cachedFate.State != state)
+                {
+                    var startTime = fate.StartTimeEpoch;
+                    var duration = fate.Duration;
+
+                    // Fates may temporarily appear in the Running state but without the timer set up
+                    if (startTime == 0 || duration == 0)
+                        continue;
+
+                    cachedFate.State = state;
+                    cachedFate.EndTimeUtc = System.DateTimeOffset.FromUnixTimeSeconds(startTime + duration).UtcDateTime;
+                    EmitFate(cachedFate);
+                }
+            }
+            else
+            {
+                if (state == FateState.WaitingForEnd || state == FateState.Ended)
+                    continue;
+
+                var startTime = fate.StartTimeEpoch;
+                var duration = fate.Duration;
+
+                // Fates may temporarily appear in the Running state but without the timer set up
+                // Forcing the state to Preparation ensures that it will continue to be polled until the timer is set
+                if (state != FateState.Preparation && (startTime == 0 || duration == 0))
+                    state = FateState.Preparation;
+
+                var pos = fate.Position;
+
+                // Fates report an inital position of 0,0 after spawning
+                // Skip the fate until it reports real data
+                if (pos.X == 0.0 && pos.Y == 0.0)
+                    continue;
+
+                cachedFate = new GameFate(){
+                    FateId = id,
+                    Name = fate.Name.ToString(),
+                    X = pos.X,
+                    Z = pos.Z,
+                    EndTimeUtc = state == FateState.Preparation ? null : System.DateTimeOffset.FromUnixTimeSeconds(startTime + duration).UtcDateTime,
+                    State = state
+                };
+
+                _fateCache.Add(id, cachedFate);
+                EmitFate(cachedFate);
+                bool valid = fate.IsValid();
+            }
+        }
+
+        // Scan the enemy cache for off-screen enemies to mark as lost
+        foreach (var entry in _fateCache)
+        {
+            var cachedFate = entry.Value;
+
+            cachedFate.OffscreenTimeMS += _deltaMs;
+
+            // Consider a fate as lost once it hasn't been seen for 500ms
+            if (cachedFate.OffscreenTimeMS >= 500.0)
+            {
+                _fateCache.Remove(entry.Key);
+                EmitLostFate(cachedFate);
+                break;
+            }
+        }
     }
 
     // DoFrameworkUpdate
@@ -520,7 +633,6 @@ public class GameScanner : IDisposable
             if (_instance < 0) UpdateInstance();
             if (_instance < 0) return;
 
-            _emitQueue.Clear();
             EmitZoneChange(new GameZoneInfo(){
                 WorldId = _worldId,
                 ZoneId = _zoneId,
@@ -543,7 +655,20 @@ public class GameScanner : IDisposable
 
         try
         {
+            // Accumulate time if the update fails for a temporary reason
+            _deltaMs += System.Math.Clamp(DalamudService.Framework.UpdateDelta.TotalMilliseconds, 1.0, 100.0);
+
+            if (double.IsNaN(_deltaMs))
+                _deltaMs = 100.0;
+
+            var x = _nextIdx;
             ScanTick();
+
+            // Scan fate table only once for each full object table sweep
+            //if (x <= _nextIdx)
+                ScanFateTick();
+
+            _deltaMs = 0.0;
         }
         finally
         {

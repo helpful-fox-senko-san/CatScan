@@ -40,7 +40,7 @@ public class HuntTerritory
 public class ScanResult
 {
     public Rank Rank;
-    public string Name;
+    public string Name = string.Empty;
     public float RawX;
     public float RawZ;
     public float MapX;
@@ -53,17 +53,26 @@ public class ScanResult
 
     public bool PossiblyDead => Dead || Missing;
 
-    public System.DateTime lastSeenTimeUtc;
-    public System.DateTime killTimeUtc;
+    public System.DateTime LastSeenTimeUtc;
+    public System.DateTime KillTimeUtc;
 
-    System.TimeSpan lastSeenAgo => Missing ? HuntModel.UtcNow - lastSeenTimeUtc : System.TimeSpan.Zero;
-    System.TimeSpan killTimeAgo => Dead ? HuntModel.UtcNow - killTimeUtc : System.TimeSpan.Zero;
+    public System.TimeSpan LastSeenAgo => Missing ? HuntModel.UtcNow - LastSeenTimeUtc : System.TimeSpan.Zero;
+    public System.TimeSpan KillTimeAgo => Dead ? HuntModel.UtcNow - KillTimeUtc : System.TimeSpan.Zero;
+}
 
-    [JsonConstructor]
-    public ScanResult()
-    {
-        Name = "";
-    }
+public class ActiveFate
+{
+    public string Name = string.Empty;
+    public float RawX;
+    public float RawZ;
+    public float MapX;
+    public float MapY;
+
+    // Fates may be started only after talking to an NPC, or have a brief intro sequence that plays out
+    public bool Running = false;
+
+    public System.DateTime EndTimeUtc;
+    public System.TimeSpan TimeRemaining => Running ? (EndTimeUtc - HuntModel.UtcNow) : System.TimeSpan.Zero;
 }
 
 public class KillCount
@@ -115,6 +124,11 @@ static class HuntModel
 
     // A list of kc monsters in the current zone, and their kill counts
     public static Dictionary<string, KillCount> KillCountLog => CurrentZoneCacheEntry.KillCountLog;
+
+    // A list of active FATEs of interest
+    // Only one of these is ever going to be present at a time unless Eureka support is added
+    // Not part of the cached zone data
+    public static Dictionary<string, ActiveFate> ActiveFates = new();
 
     // --- Page data in and out for per-zone persistence
 

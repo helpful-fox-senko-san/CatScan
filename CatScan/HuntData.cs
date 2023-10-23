@@ -292,4 +292,17 @@ public static class HuntData
             B("Shockmaw"), B("Yumcax"), A("Petalodus"), A("Gurangatch"), S("Ophioneus")
         )},
     };
+
+    public readonly static HashSet<string> EpicFates = new HashSet<string>{
+        "Steel Reign",
+        "Behold Now Behemoth", "He Taketh It with His Eyes",
+        "Long Live the Coeurl", "Coeurls Chase Boys", "Coeurls Chase Boys Chase Coeurls",
+        "Prey Online",
+        "Foxy Lady",
+        "A Horse Outside",
+        "The Head, the Tail, the Whole Damned Thing",
+        "A Finale Most Formidable",
+        "Devout Pilgrims vs. Daivadipa",
+        "Omicron Recall: Killing Order"
+    };
 }
