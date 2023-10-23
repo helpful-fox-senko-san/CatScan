@@ -46,7 +46,7 @@ public class ScanResult
     public float MapX;
     public float MapY;
     public float HpPct;
-    [JsonIgnore] public bool Missing;
+    [JsonIgnore] public bool Missing = true;
 
     public bool Dead => (HpPct == 0.0);
     public bool Pulled => (HpPct < 100.0);
