@@ -157,7 +157,7 @@ public class MainWindow : Window, IDisposable
                     if (timeRemaining <= TimeSpan.Zero)
                         timeRemaining = TimeSpan.Zero;
 
-                    var mins = timeRemaining.TotalMinutes.ToString("0");
+                    var mins = System.Math.Floor(timeRemaining.TotalMinutes).ToString("0");
                     var secs = timeRemaining.Seconds.ToString("00");
                     str += $" ({mins}:{secs})";
                 }
