@@ -66,14 +66,11 @@ public class Notifications
         waveOut.Init(waveStream);
         waveOut.Volume = Plugin.Configuration.SoundVolume;
         waveOut.Play();
-        DalamudService.Log.Error($"Playing {filename} at vol {Plugin.Configuration.SoundVolume}");
         waveOut.PlaybackStopped += (object? sender, StoppedEventArgs args) => {
-            DalamudService.Log.Error($"Stopping {filename}");
             waveStream.Close();
             waveOut.Dispose();
             waveStream.Dispose();
         };
-
     }
 
     public void OnNewScanResult(ScanResult scanResult)
