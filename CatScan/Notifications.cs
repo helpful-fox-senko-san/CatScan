@@ -62,14 +62,15 @@ public class Notifications
         }
 
         var waveStream = cachedSample.MakeStream();
+        var waveChannel = new WaveChannel32(waveStream, Plugin.Configuration.SoundVolume, 1.0f){
+            PadWithZeroes = false,
+        };
         var waveOut = new WaveOutEvent();
-        waveOut.Init(waveStream);
-        waveOut.Volume = Plugin.Configuration.SoundVolume;
+        waveOut.Init(waveChannel);
         waveOut.Play();
         waveOut.PlaybackStopped += (object? sender, StoppedEventArgs args) => {
-            waveStream.Close();
+            waveChannel.Dispose();
             waveOut.Dispose();
-            waveStream.Dispose();
         };
     }
 
