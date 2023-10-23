@@ -224,8 +224,14 @@ public class MainWindow : Window, IDisposable
         ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableSetupColumn("kills", ImGuiTableColumnFlags.WidthFixed);
 
+        var eureka = (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka);
+
         foreach (var r in HuntModel.KillCountLog)
         {
+            // XXX: Hide zero-kill KC mobs in eureka
+            if (eureka && r.Value.Killed == 0)
+                continue;
+
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();

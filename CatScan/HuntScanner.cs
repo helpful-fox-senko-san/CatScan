@@ -184,12 +184,19 @@ public class HuntScanner
                 HuntModel.ActiveFates.Add(fate.Name, activeFate);
                 UpdateActiveFate(activeFate, fate);
 
-                // XXX: This is the only epic boss fate that doesn't spawn with the boss initially present
+                // XXX: Only relevant fates that don't spawn with the boss initially present
                 if (fate.Name == "Long Live the Coeurl")
                 {
                     if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertFATE)
                         Plugin.Notifications.PlaySfx("ping3.wav");
                 }
+
+                if (fate.Name == "The Baldesion Arsenal: Expedition Support")
+                {
+                    if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertS)
+                        Plugin.Notifications.PlaySfx("ping3.wav");
+                }
+
             }
         }
     }
@@ -273,6 +280,13 @@ public class HuntScanner
 
         // Clear non-A rank monsters
         //todo...
+
+        // If its Eureka, clear everything, because we can't track instances
+        if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka)
+        {
+            HuntModel.KillCountLog.Clear();
+            HuntModel.ScanResults.Clear();
+        }
 
         // Tell GameScanner to scan for enemies if we're in a known hunt zone
         if (HuntData.Zones.ContainsKey(zoneInfo.ZoneId))
