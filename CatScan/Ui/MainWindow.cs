@@ -295,7 +295,7 @@ public class MainWindow : Window, IDisposable
         if (ImGui.Button("Import from Clipboard"))
         {
             HuntModel.Deserialize(ImGui.GetClipboardText());
-            // During Deserialization the InRange parameters are reset to false
+            // During Deserialization the Missing parameter is reset to true
             // Resetting the GameScanner allows it to re-detect actually in-range enemies
             _gameScanner.ClearCache();
         }
