@@ -42,9 +42,15 @@ public class HuntScanner
         return ((41.0f / scale) * ((raw + 1024.0f) / 2048.0f)) + 1.0f - offset;
     }
 
-    private void KilledSS()
+    private void KilledS()
     {
-        // Clear out both minion scan results and kill count data after an SS is killed
+        // Eureka has multiple "S" ranks and multiple kill counts
+        // Skip clearing the kill count until there's an association between them individually
+        if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka)
+            return;
+
+        // Clear kill count data after an S rank is killed
+        // It could be cleared when it spawns instead, but you may want some time to see the final count
         foreach (var mark in HuntModel.Territory.ZoneData.Marks)
         {
             if (mark.Rank == Rank.KC)
@@ -55,13 +61,19 @@ public class HuntScanner
                     kcLogEntry.Missing = 0;
                 }
             }
-            else if (mark.Rank == Rank.Minion)
-            {
-                HuntModel.ScanResults.Remove(mark.Name);
-            }
         }
 
         _kcEnemies.Clear();
+    }
+
+    private void KilledSS()
+    {
+        // Clear minion scan results after an SS is killed
+        foreach (var mark in HuntModel.Territory.ZoneData.Marks)
+        {
+            if (mark.Rank == Rank.Minion)
+                HuntModel.ScanResults.Remove(mark.Name);
+        }
     }
 
     // Apply dynamic data from a scanned GameEnemy on to an existing Scan Result
@@ -254,6 +266,8 @@ public class HuntScanner
         if (scanResult.HpPct != 0.0 && gameEnemy.HpPct == 0.0)
         {
             scanResult.KillTimeUtc = HuntModel.UtcNow;
+            if (scanResult.Rank == Rank.S)
+                KilledS();
             if (scanResult.Rank == Rank.SS)
                 KilledSS();
         }
