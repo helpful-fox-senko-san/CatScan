@@ -3,16 +3,21 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
-
-using TerritoryType = Lumina.Excel.GeneratedSheets.TerritoryType;
 
 namespace CatScan.Ui;
 
 public partial class MainWindow : Window, IDisposable
 {
+    public enum Tabs
+    {
+        ScanResults,
+        KillCount,
+        Config,
+        Debug
+    }
+
     // for debugging
     private GameScanner _gameScanner;
     private string _resourcePath = "";
@@ -22,34 +27,16 @@ public partial class MainWindow : Window, IDisposable
         return new Vector4(r / 255.0f, g / 255.0f, b / 255.0f, 255.0f);
     }
 
-    private Dictionary<int, uint> _territoryToMapId = new();
-
-    private bool _forceOpenConfig = false;
-
-    private string? _cachedZoneName = null;
-    private int _cachedZoneId = -1;
+    private Tabs? _forceOpenTab;
 
     public MainWindow(GameScanner gameScanner) : base("CatScan")
     {
         _gameScanner = gameScanner;
         this.SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(300, 300),
+            MinimumSize = new Vector2(300, 200),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
-
-        var territoryData = DalamudService.DataManager.GetExcelSheet<TerritoryType>();
-
-        if (territoryData != null)
-        {
-            foreach (var z in HuntData.Zones)
-            {
-                var row = territoryData.GetRow((uint)z.Key);
-
-                if (row != null)
-                    _territoryToMapId.Add(z.Key, row.Map.Row);
-            }
-        }
 
         _resourcePath = Path.Combine(DalamudService.PluginInterface.AssemblyLocation.Directory?.FullName!, "Resources");
 
@@ -60,36 +47,14 @@ public partial class MainWindow : Window, IDisposable
     {
     }
 
-    private void DoMapLink(float mapX, float mapY)
+    public void OpenTab(Tabs? tab)
     {
-        if (_territoryToMapId.TryGetValue(HuntModel.Territory.ZoneId, out var mapId))
-        {
-            DalamudService.Framework.RunOnFrameworkThread(() => {
-                var mapPayload = new Dalamud.Game.Text.SeStringHandling.Payloads.MapLinkPayload(
-                    (uint)HuntModel.Territory.ZoneId, mapId, mapX, mapY
-                );
-                DalamudService.GameGui.OpenMapWithMapLink(mapPayload);
-            });
-        }
+        if (IsOpen)
+            BringToFront();
         else
-        {
-            DalamudService.Log.Error("Data missing to generate map link");
-        }
-    }
+            IsOpen = true;
 
-    private string? GetLuminaZoneName(int zoneId)
-    {
-        if (zoneId == _cachedZoneId)
-            return _cachedZoneName;
-        var territoryData = DalamudService.DataManager.GetExcelSheet<TerritoryType>();
-        var territoryType = territoryData?.GetRow((uint)zoneId);
-        _cachedZoneName = territoryType?.PlaceName?.Value?.Name?.ToString();
-        return _cachedZoneName;
-    }
-
-    public void SwitchToConfigTab()
-    {
-        _forceOpenConfig = true;
+        _forceOpenTab = tab;
     }
 
     public override void Draw()
@@ -102,37 +67,38 @@ public partial class MainWindow : Window, IDisposable
         if (zoneName.Length > 0 && zoneName.Substring(0, 1) == "#")
         {
             // May as well make the window useful while its visible in unknown zones
-            string? luminaZoneName = GetLuminaZoneName(HuntModel.Territory.ZoneId);
+            string? luminaZoneName = DalamudService.GetZoneName(HuntModel.Territory.ZoneId);
             if (luminaZoneName != null)
                 zoneName = luminaZoneName;
             else
                 zoneName = $"Zone {zoneName}";
         }
+
+        // There is some excess space at the top of the window
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 2.0f);
+        // I think the blurry scaled text is charming but idk
+        //ImGui.SetWindowFontScale(1.2f);
         ImGuiHelpers.CenteredText($"{zoneName}{instanceText}");
+        //ImGui.SetWindowFontScale(1.0f);
+        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2.0f);
+
+        var doTab = (string name, Tabs tabId, Action drawfn) => {
+            bool forceOpenFlag = (_forceOpenTab == tabId);
+
+            using var tabItem = forceOpenFlag ? ImRaii.TabItem(name, ref forceOpenFlag, ImGuiTabItemFlags.SetSelected) : ImRaii.TabItem(name);
+
+            if (tabItem.Success)
+                drawfn();
+
+            if (forceOpenFlag)
+                _forceOpenTab = null;
+        };
 
         using var tabs = ImRaii.TabBar("MainWindowTabs");
-        using (var tabItem = ImRaii.TabItem("Scan Results"))
-        {
-            if (tabItem.Success)
-                DrawScanResults();
-        }
-        using (var tabItem = ImRaii.TabItem("Kill Count"))
-        {
-            if (tabItem.Success)
-                DrawKillCounts();
-        }
-        using (var tabItem = _forceOpenConfig ? ImRaii.TabItem("Config", ref _forceOpenConfig, ImGuiTabItemFlags.SetSelected) : ImRaii.TabItem("Config"))
-        {
-            _forceOpenConfig = false;
-            if (tabItem.Success)
-                DrawConfig();
-        }
-#if DEBUG
-        using (var tabItem = ImRaii.TabItem("Debug"))
-        {
-            if (tabItem.Success)
-                DrawDebug();
-        }
-#endif
+        doTab("Scan Results", Tabs.ScanResults, DrawScanResults);
+        doTab("Kill Count", Tabs.KillCount, DrawKillCounts);
+        doTab("Config", Tabs.Config, DrawConfig);
+        if (Plugin.Configuration.DebugEnabled)
+            doTab("Debug", Tabs.Config, DrawDebug);
     }
 }

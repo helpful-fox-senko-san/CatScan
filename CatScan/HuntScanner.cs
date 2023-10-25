@@ -21,8 +21,10 @@ public class HuntScanner
 
     // Event is appropriate to be consumed by notification generators
     public delegate void NewScanResultDelegate(ScanResult scanResult);
+    public delegate void NewEpicFateDelegate(ActiveFate fate);
 
     public event NewScanResultDelegate? NewScanResult;
+    public event NewEpicFateDelegate? NewEpicFate;
 
     public HuntScanner(GameScanner gameScanner)
     {
@@ -195,20 +197,7 @@ public class HuntScanner
                 };
                 HuntModel.ActiveFates.Add(fate.Name, activeFate);
                 UpdateActiveFate(activeFate, fate);
-
-                // XXX: Only relevant fates that don't spawn with the boss initially present
-                if (fate.Name == "Long Live the Coeurl")
-                {
-                    if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertFATE)
-                        Plugin.Notifications.PlaySfx("ping3.wav");
-                }
-
-                if (fate.Name == "The Baldesion Arsenal: Expedition Support")
-                {
-                    if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertS)
-                        Plugin.Notifications.PlaySfx("ping3.wav");
-                }
-
+                NewEpicFate?.Invoke(activeFate);
             }
         }
     }

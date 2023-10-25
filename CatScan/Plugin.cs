@@ -39,9 +39,8 @@ public sealed class Plugin : IDalamudPlugin
         DalamudService.PluginInterface.UiBuilder.OpenMainUi += OpenMainUi;
         DalamudService.PluginInterface.UiBuilder.OpenConfigUi += OpenConfigUi;
 
-#if DEBUG
-        MainWindow.IsOpen = true;
-#endif
+        if (Plugin.Configuration.DebugEnabled)
+            MainWindow.IsOpen = true;
     }
 
     public void Dispose()
@@ -66,16 +65,12 @@ public sealed class Plugin : IDalamudPlugin
 
     public static void OpenMainUi()
     {
-        if (MainWindow.IsOpen)
-            MainWindow.BringToFront();
-        else
-            MainWindow.IsOpen = true;
+        MainWindow.OpenTab(null);
     }
 
     public static void OpenConfigUi()
     {
-        OpenMainUi();
-        MainWindow.SwitchToConfigTab();
+        MainWindow.OpenTab(MainWindow.Tabs.Config);
     }
 
     private static void OnHuntCommand(string command, string args)

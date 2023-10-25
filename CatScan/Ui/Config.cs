@@ -20,6 +20,9 @@ public partial class MainWindow : Window, IDisposable
         }
         using (var soundIndent = ImRaii.PushIndent(24.0f))
         {
+			using var soundId = ImRaii.PushId("Sound");
+			using var disabled = ImRaii.Disabled(!Plugin.Configuration.SoundEnabled);
+
             f = Plugin.Configuration.SoundVolume * 100.0f;
             if (ImGui.SliderFloat("Volume", ref f, 0.0f, 100.0f, "%.0f%%"))
             {
@@ -40,6 +43,7 @@ public partial class MainWindow : Window, IDisposable
                 Plugin.Configuration.Save();
             }
 
+            ImGui.SameLine();
             b = Plugin.Configuration.SoundAlertS;
             if (ImGui.Checkbox("S Rank", ref b))
             {
@@ -73,6 +77,64 @@ public partial class MainWindow : Window, IDisposable
 
         ImGui.Separator();
 
+        b = Plugin.Configuration.AutoOpenEnabled;
+        if (ImGui.Checkbox("Open Window Automatically", ref b))
+        {
+            Plugin.Configuration.AutoOpenEnabled = b;
+            Plugin.Configuration.Save();
+        }
+        using (var autoOpenIndent = ImRaii.PushIndent(24.0f))
+        {
+			using var autoOpenId = ImRaii.PushId("AutoOpen");
+			using var disabled = ImRaii.Disabled(!Plugin.Configuration.AutoOpenEnabled);
+
+            b = Plugin.Configuration.AutoOpenFATE;
+            if (ImGui.Checkbox("Epic FATE", ref b))
+            {
+                Plugin.Configuration.AutoOpenFATE = b;
+                Plugin.Configuration.Save();
+            }
+
+            ImGui.SameLine();
+            b = Plugin.Configuration.AutoOpenS;
+            if (ImGui.Checkbox("S Rank", ref b))
+            {
+                Plugin.Configuration.AutoOpenS = b;
+                Plugin.Configuration.Save();
+            }
+        }
+
+        ImGui.Separator();
+
+        b = Plugin.Configuration.AutoFlagEnabled;
+        if (ImGui.Checkbox("Open Map Flag Automatically", ref b))
+        {
+            Plugin.Configuration.AutoFlagEnabled = b;
+            Plugin.Configuration.Save();
+        }
+        using (var autoFlagIndent = ImRaii.PushIndent(24.0f))
+        {
+			using var autoFlagId = ImRaii.PushId("AutoFlag");
+			using var disabled = ImRaii.Disabled(!Plugin.Configuration.AutoFlagEnabled);
+
+            b = Plugin.Configuration.AutoFlagFATE;
+            if (ImGui.Checkbox("Epic FATE", ref b))
+            {
+                Plugin.Configuration.AutoFlagFATE = b;
+                Plugin.Configuration.Save();
+            }
+
+            ImGui.SameLine();
+            b = Plugin.Configuration.AutoFlagS;
+            if (ImGui.Checkbox("S Rank", ref b))
+            {
+                Plugin.Configuration.AutoFlagS = b;
+                Plugin.Configuration.Save();
+            }
+        }
+
+        ImGui.Separator();
+
         b = Plugin.Configuration.ShowMissingKC;
         if (ImGui.Checkbox("Count missing KC mobs", ref b))
         {
@@ -81,5 +143,16 @@ public partial class MainWindow : Window, IDisposable
         }
 
         ImGui.TextWrapped("Keeps track of mobs that are no longer visible to you. Use to estimate a possible kill count range when you are not killing alone.");
+
+        ImGui.Separator();
+
+        b = Plugin.Configuration.DebugEnabled;
+        if (ImGui.Checkbox("Debug Enabled", ref b))
+        {
+            Plugin.Configuration.DebugEnabled = b;
+            Plugin.Configuration.Save();
+        }
+
+        ImGui.TextWrapped("Displays Debug tab and opens plugin window on start-up.");
     }
 }
