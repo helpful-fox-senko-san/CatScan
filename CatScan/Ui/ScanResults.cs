@@ -104,7 +104,7 @@ public partial class MainWindow : Window, IDisposable
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
                 if (ImGui.Selectable("##clickableFate:" + f.Name, false, ImGuiSelectableFlags.AllowItemOverlap))
-                    DoMapLink(f.MapX, f.MapY);
+                    DalamudService.DoMapLink(f.MapX, f.MapY);
                 ImGui.SameLine();
                 ImGuiHelpers.CenteredText(str);
             }
@@ -140,13 +140,12 @@ public partial class MainWindow : Window, IDisposable
             else if (r.HpPct < 100.0)
                 color = _textColorPulled;
 
-
             using var pushColor1 = ImRaii.PushColor(ImGuiCol.Text, color, color != Vector4.Zero);
             // The default hover colors are too intense
             using var pushColor2 = ImRaii.PushColor(ImGuiCol.HeaderHovered, RGB(48, 48, 48));
             using var pushColor3 = ImRaii.PushColor(ImGuiCol.HeaderActive, RGB(64, 64, 64));
             if (ImGui.Selectable($"{r.Name} ( {r.MapX:F1} , {r.MapY:F1} ) HP: {r.HpPct:F1}%"))
-                DoMapLink(r.MapX, r.MapY);
+                DalamudService.DoMapLink(r.MapX, r.MapY);
         }
     }
 }

@@ -28,6 +28,9 @@ public class Notifications
 
     private Dictionary<string, CachedSample> _cachedWavFiles = new();
 
+    // XXX: Low quality hack to try avoid pinging Coeurlregina during the Long Live the Coeurls fate
+    private bool _coeurlHackFlag = false;
+
     private CachedSample PreloadSfx(string filename)
     {
         using var waveStream = new WaveFileReader(Path.Combine(_resourcePath, filename));
@@ -43,6 +46,7 @@ public class Notifications
     {
         _huntScanner = huntScanner;
         _huntScanner.NewScanResult += OnNewScanResult;
+        _huntScanner.NewEpicFate += OnNewEpicFate;
         _resourcePath = Path.Combine(DalamudService.PluginInterface.AssemblyLocation.Directory?.FullName!, "Resources");
 
         PreloadSfx("ping1.wav");
@@ -74,12 +78,38 @@ public class Notifications
         };
     }
 
+    private void HandleAutoOpen(Rank rank, float mapX, float mapY)
+    {
+        if (Plugin.Configuration.AutoOpenEnabled)
+        {
+            if (Plugin.Configuration.AutoOpenS && rank == Rank.S)
+                Plugin.MainWindow.OpenTab(Ui.MainWindow.Tabs.ScanResults);
+            else if (Plugin.Configuration.AutoOpenFATE && rank == Rank.FATE)
+                Plugin.MainWindow.OpenTab(Ui.MainWindow.Tabs.ScanResults);
+        }
+
+        if (Plugin.Configuration.AutoFlagEnabled)
+        {
+            if (Plugin.Configuration.AutoFlagS && rank == Rank.S)
+                DalamudService.DoMapLink(mapX, mapY);
+            else if (Plugin.Configuration.AutoFlagFATE && rank == Rank.FATE)
+                DalamudService.DoMapLink(mapX, mapY);
+        }
+    }
+
     public void OnNewScanResult(ScanResult scanResult)
     {
         string? sfx = null;
 
-        if (!Plugin.Configuration.SoundEnabled)
+        // These are handled by OnNewEpicFate instead
+        if (scanResult.Name == "Tristitia")
             return;
+
+        if (scanResult.Name == "Coeurlregina" && _coeurlHackFlag)
+        {
+            _coeurlHackFlag = false;
+            return;
+        }
 
         if (scanResult.Rank == Rank.FATE && Plugin.Configuration.SoundAlertFATE)
             sfx = "ping3.wav";
@@ -94,7 +124,30 @@ public class Notifications
         else if (scanResult.Rank == Rank.Minion && Plugin.Configuration.SoundAlertMinions)
             sfx = "ping1.wav";
 
-        if (sfx != null)
+        if (Plugin.Configuration.SoundEnabled && sfx != null)
             PlaySfx(sfx);
+
+        HandleAutoOpen(scanResult.Rank, scanResult.MapX, scanResult.MapY);
+    }
+
+    public void OnNewEpicFate(ActiveFate fate)
+    {
+        _coeurlHackFlag = false;
+
+        // Notify for fates that don't spawn with the boss initially present
+        if (fate.Name == "Long Live the Coeurl")
+        {
+            if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertFATE)
+                Plugin.Notifications.PlaySfx("ping3.wav");
+            _coeurlHackFlag = true;
+            HandleAutoOpen(Rank.FATE, fate.MapX, fate.MapY);
+        }
+
+        if (fate.Name == "The Baldesion Arsenal: Expedition Support")
+        {
+            if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertS)
+                Plugin.Notifications.PlaySfx("ping3.wav");
+            HandleAutoOpen(Rank.S, fate.MapX, fate.MapY);
+        }
     }
 }
