@@ -151,8 +151,9 @@ public class Notifications
             HandleAutoOpen(Rank.S, fate.MapX, fate.MapY);
         }
 
-        // Alert for pre-CE fates in Bozja/Zadnor
-        if ((HuntModel.Territory.ZoneId == 920 || HuntModel.Territory.ZoneId == 975) && fate.Epic)
+        // Alert for pre-CE fates in Bozja/Zadnor -- but not their Part 2 fates
+        if (((HuntModel.Territory.ZoneId == 920 || HuntModel.Territory.ZoneId == 975) && fate.Epic)
+         && fate.Name != "Of Steel and Flame" && fate.Name != "Attack of the Supersoldiers")
         {
             if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertFATE)
                 Plugin.Notifications.PlaySfx("ping3.wav");
