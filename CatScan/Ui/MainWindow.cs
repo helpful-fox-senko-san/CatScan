@@ -13,6 +13,7 @@ public partial class MainWindow : Window, IDisposable
     public enum Tabs
     {
         ScanResults,
+        Fates,
         KillCount,
         Config,
         Debug
@@ -96,6 +97,7 @@ public partial class MainWindow : Window, IDisposable
 
         using var tabs = ImRaii.TabBar("MainWindowTabs");
         doTab("Scan Results", Tabs.ScanResults, DrawScanResults);
+        doTab("Fates", Tabs.Fates, DrawFates);
         doTab("Kill Count", Tabs.KillCount, DrawKillCounts);
         doTab("Config", Tabs.Config, DrawConfig);
         if (Plugin.Configuration.DebugEnabled)

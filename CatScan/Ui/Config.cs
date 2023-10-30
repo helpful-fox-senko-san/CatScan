@@ -9,6 +9,8 @@ public partial class MainWindow : Window, IDisposable
 {
     private void DrawConfig()
     {
+        using var tabId = ImRaii.PushId("Config");
+
         bool b;
         float f;
 
@@ -20,8 +22,8 @@ public partial class MainWindow : Window, IDisposable
         }
         using (var soundIndent = ImRaii.PushIndent(24.0f))
         {
-			using var soundId = ImRaii.PushId("Sound");
-			using var disabled = ImRaii.Disabled(!Plugin.Configuration.SoundEnabled);
+            using var soundId = ImRaii.PushId("Sound");
+            using var disabled = ImRaii.Disabled(!Plugin.Configuration.SoundEnabled);
 
             f = Plugin.Configuration.SoundVolume * 100.0f;
             if (ImGui.SliderFloat("Volume", ref f, 0.0f, 100.0f, "%.0f%%"))
@@ -85,8 +87,8 @@ public partial class MainWindow : Window, IDisposable
         }
         using (var autoOpenIndent = ImRaii.PushIndent(24.0f))
         {
-			using var autoOpenId = ImRaii.PushId("AutoOpen");
-			using var disabled = ImRaii.Disabled(!Plugin.Configuration.AutoOpenEnabled);
+            using var autoOpenId = ImRaii.PushId("AutoOpen");
+            using var disabled = ImRaii.Disabled(!Plugin.Configuration.AutoOpenEnabled);
 
             b = Plugin.Configuration.AutoOpenFATE;
             if (ImGui.Checkbox("Epic FATE", ref b))
@@ -114,8 +116,8 @@ public partial class MainWindow : Window, IDisposable
         }
         using (var autoFlagIndent = ImRaii.PushIndent(24.0f))
         {
-			using var autoFlagId = ImRaii.PushId("AutoFlag");
-			using var disabled = ImRaii.Disabled(!Plugin.Configuration.AutoFlagEnabled);
+            using var autoFlagId = ImRaii.PushId("AutoFlag");
+            using var disabled = ImRaii.Disabled(!Plugin.Configuration.AutoFlagEnabled);
 
             b = Plugin.Configuration.AutoFlagFATE;
             if (ImGui.Checkbox("Epic FATE", ref b))

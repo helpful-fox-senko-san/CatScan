@@ -62,11 +62,13 @@ public class ScanResult
 
 public class ActiveFate
 {
+    public bool Epic;
     public string Name = string.Empty;
     public float RawX;
     public float RawZ;
     public float MapX;
     public float MapY;
+    public float ProgressPct;
 
     // Fates may be started only after talking to an NPC, or have a brief intro sequence that plays out
     public bool Running = false;
@@ -125,8 +127,7 @@ static class HuntModel
     // A list of kc monsters in the current zone, and their kill counts
     public static Dictionary<string, KillCount> KillCountLog => CurrentZoneCacheEntry.KillCountLog;
 
-    // A list of active FATEs of interest
-    // Only one of these is ever going to be present at a time unless Eureka support is added
+    // A list of active FATEs
     // Not part of the cached zone data
     public static Dictionary<string, ActiveFate> ActiveFates = new();
 

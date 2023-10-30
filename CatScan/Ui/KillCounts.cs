@@ -13,6 +13,8 @@ public partial class MainWindow : Window, IDisposable
 
     private void DrawKillCounts()
     {
+        using var tabId = ImRaii.PushId("KillCounts");
+
         if (HuntModel.KillCountLog.Count == 0)
         {
             ImGui.Text("");

@@ -50,6 +50,7 @@ public class GameFate
     // raw world coordinates
     public float X;
     public float Z;
+    public float ProgressPct;
     public FateState State;
     public System.DateTime? EndTimeUtc;
 
@@ -191,7 +192,7 @@ public class GameScanner : IDisposable
         DalamudService.ClientState.TerritoryChanged += OnTerritoryChanged;
         DalamudService.Condition.ConditionChange += OnConditionChange;
 
-		// Trigger an initial update based on the current territory
+        // Trigger an initial update based on the current territory
         _territoryChanged = true;
     }
 
@@ -539,8 +540,6 @@ public class GameScanner : IDisposable
                 // Mark existing fate as being seen
                 cachedFate.OffscreenTimeMS = 0.0f;
 
-                // We don't check for or update the fate position here, because the only fates we're interested in never move
-
                 if (cachedFate.State != state)
                 {
                     var startTime = fate.StartTimeEpoch;
@@ -552,6 +551,12 @@ public class GameScanner : IDisposable
 
                     cachedFate.State = state;
                     cachedFate.EndTimeUtc = System.DateTimeOffset.FromUnixTimeSeconds(startTime + duration).UtcDateTime;
+                }
+
+                if (state != FateState.Preparation)
+                {
+                    // TODO: dont update unless something changes
+                    cachedFate.ProgressPct = (float)fate.Progress / 10000.0f;
                     EmitFate(cachedFate);
                 }
             }

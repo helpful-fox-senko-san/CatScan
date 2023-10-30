@@ -17,13 +17,13 @@ public partial class MainWindow : Window, IDisposable
     private IDalamudTextureWrap? _iconS;
     private IDalamudTextureWrap? _iconF;
 
-    private Vector4 _textColorPulled = RGB(192, 32, 32);
+    private Vector4 _textColorPulled = RGB(224, 96, 96);
     private Vector4 _textColorDead = RGB(160, 96, 96);
     private Vector4 _textColorGone = RGB(160, 160, 160);
 
-	private void InitScanResults()
-	{
-		DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "B.png")).ContinueWith(icon => {
+    private void InitScanResults()
+    {
+        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "B.png")).ContinueWith(icon => {
             _iconB = icon.Result;
         });
 
@@ -38,7 +38,7 @@ public partial class MainWindow : Window, IDisposable
         DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "F.png")).ContinueWith(icon => {
             _iconF = icon.Result;
         });
-	}
+    }
 
     private void DrawRankIcon(Rank rank)
     {
@@ -68,6 +68,8 @@ public partial class MainWindow : Window, IDisposable
 
     private void DrawScanResults()
     {
+        using var tabId = ImRaii.PushId("ScanResults");
+
         if (HuntModel.ScanResults.Count == 0 && HuntModel.ActiveFates.Count == 0 && !_gameScanner.ScanningEnabled)
         {
             using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
@@ -76,8 +78,15 @@ public partial class MainWindow : Window, IDisposable
             return;
         }
 
+        var epicFateList = new List<ActiveFate>(HuntModel.ActiveFates.Values);
+        epicFateList.RemoveAll((x) => !x.Epic);
+
+        epicFateList.Sort((ActiveFate a, ActiveFate b) => {
+            return (int)(a.EndTimeUtc - b.EndTimeUtc).TotalSeconds;
+        });
+
         // We only expect one interesting fate to ever be active in a zone at the time
-        if (HuntModel.ActiveFates.Count > 0)
+        if (epicFateList.Count > 0)
         {
             using var pushFateTableBorderColor1 = ImRaii.PushColor(ImGuiCol.TableBorderLight, RGB(96, 16, 96));
             using var pushFateTableBorderColor2 = ImRaii.PushColor(ImGuiCol.TableBorderStrong, RGB(96, 16, 96));
@@ -87,7 +96,7 @@ public partial class MainWindow : Window, IDisposable
             using var pushColorFate2 = ImRaii.PushColor(ImGuiCol.HeaderActive, RGB(128, 24, 128));
             using var fateTable = ImRaii.Table("FateTable", 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders);
             ImGui.TableSetupColumn("fate", ImGuiTableColumnFlags.WidthStretch);
-            foreach (var f in HuntModel.ActiveFates.Values)
+            foreach (var f in epicFateList)
             {
                 var str = f.Name;
                 var timeRemaining = f.TimeRemaining;
