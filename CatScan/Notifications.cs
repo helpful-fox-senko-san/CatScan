@@ -92,9 +92,9 @@ public class Notifications
         if (Plugin.Configuration.AutoFlagEnabled)
         {
             if (Plugin.Configuration.AutoFlagS && rank == Rank.S)
-                DalamudService.DoMapLink(mapX, mapY);
+                GameFunctions.DoMapLink(mapX, mapY);
             else if (Plugin.Configuration.AutoFlagFATE && rank == Rank.FATE)
-                DalamudService.DoMapLink(mapX, mapY);
+                GameFunctions.DoMapLink(mapX, mapY);
         }
     }
 

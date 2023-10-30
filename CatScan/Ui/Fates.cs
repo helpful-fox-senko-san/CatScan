@@ -96,7 +96,7 @@ public partial class MainWindow : Window, IDisposable
             using var pushColor3 = ImRaii.PushColor(ImGuiCol.HeaderActive, RGB(64, 64, 64));
 
             if (ImGui.Selectable("##clickableFate:" + f.Name, false, ImGuiSelectableFlags.AllowItemOverlap))
-                DalamudService.DoMapLink(f.MapX, f.MapY);
+                GameFunctions.DoMapLink(f.MapX, f.MapY);
             ImGui.SameLine();
             ImGui.Text(f.Name);
             if (f.ProgressPct > 0.0f)
