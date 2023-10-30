@@ -10,7 +10,8 @@ public enum Expansion
     SB,
     ShB,
     EW,
-    Eureka
+    Eureka,
+    Bozja
 }
 
 public enum Rank
@@ -138,10 +139,14 @@ public static class HuntData
         return new Zone(Expansion.EW, name, instances, m2);
     }
 
-
     private static Zone Eureka_Zone(string name, params Mark[] marks)
     {
         return new Zone(Expansion.Eureka, name, 9, marks);
+    }
+
+    private static Zone Bozja_Zone(string name, params Mark[] marks)
+    {
+        return new Zone(Expansion.Bozja, name, 9, marks);
     }
 
     // -- Shorthand overloads for uninstanced maps
@@ -362,6 +367,55 @@ public static class HuntData
             KC("Hydatos Wraith"), KC("Tigerhawk"), KC("Laboratory Lion"),
             KC("Hydatos Delphyne"), KC("Crystal Claw")
         )},
+
+    // -- Bozja
+
+        // TODO: Highlight pre-CE fates in a less obnoxious way?
+        // TODO: Mark which fates and KCs belong to which zone?
+        // XXX: Dividers between kc mobs are hard-coded in UI code
+        // XXX: Using B ranks for star mobs -- A ranks get saved in zone cache
+
+        {920, Bozja_Zone("Bozjan Southern Front",
+            B("Ink Claw"),
+            B("Tideborn Angel"),
+            B("Fern Flower"),
+            B("Viy"),
+            B("Psoglav"),
+            B("Smok"),
+            B("Patty"),
+            B("Clingy Clare"),
+            B("Bird of Barathrum"),
+
+            KC("4th Legion Roader"),
+            KC("4th Legion Death Claw"),
+            KC("4th Legion Nimrod"),
+            KC("4th Legion Slasher"),
+
+            KC("4th Legion Avenger"),
+            KC("4th Legion Gunship"),
+            KC("4th Legion Vanguard"),
+
+            KC("4th Legion Hexadrone"),
+            KC("4th Legion Armored Weapon"),
+            KC("4th Legion Scorpion")
+        )},
+
+        {975, Bozja_Zone("Zadnor",
+            KC("4th Legion Nimrod"),
+            KC("4th Legion Infantry"),
+            KC("4th Legion Gunship"),
+            KC("4th Legion Hexadrone"),
+
+            KC("4th Legion Satellite"),
+            KC("4th Legion Colossus"),
+            KC("4th Legion Armored Weapon"),
+            KC("4th Legion Death Machine"),
+
+            KC("4th Legion Helldiver"),
+            KC("4th Legion Cavalry"),
+            KC("4th Legion Roader"),
+            KC("4th Legion Rearguard")
+        )}
     };
 
     public readonly static HashSet<string> EpicFates = new HashSet<string>{
@@ -378,6 +432,24 @@ public static class HuntData
 
         // Should the Eureka NM fates all be added here too?
         // Support fate needs to be added at least, since it spawns with no boss
-        "The Baldesion Arsenal: Expedition Support"
+        "The Baldesion Arsenal: Expedition Support",
+
+        // Bozja pre-CE fates
+        "All Pets Are Off",
+        "More Machine Now than Man",
+        "Unicorn Flakes",
+        "Red (Chocobo) Alert",
+        "I'm a Mechanical Man",
+        "For Absent Friends",
+        "Of Steel and Flame",
+
+        // Zadnor pre-CE fates
+        "An Immoral Dilemma",
+        "Another Pilot Episode",
+        "Tanking Up",
+        "An End to Atrocities",
+        "The Beasts are Back",
+        "Hypertuned Havoc",
+        "Attack of the Supersoldiers"
     };
 }

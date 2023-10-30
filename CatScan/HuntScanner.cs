@@ -49,9 +49,10 @@ public class HuntScanner
 
     private void KilledS()
     {
-        // Eureka has multiple "S" ranks and multiple kill counts
+        // Eureka/Bozja has multiple "S" ranks and multiple kill counts
         // Skip clearing the kill count until there's an association between them individually
-        if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka)
+        if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka
+         || HuntModel.Territory.ZoneData.Expansion == Expansion.Bozja)
             return;
 
         // Clear kill count data after an S rank is killed
@@ -294,8 +295,9 @@ public class HuntScanner
         // Clear non-A rank monsters
         //todo...
 
-        // If its Eureka, clear everything, because we can't track instances
-        if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka)
+        // If its Eureka/Bozja, clear everything, because we can't track instances
+        if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka
+         || HuntModel.Territory.ZoneData.Expansion == Expansion.Bozja)
         {
             HuntModel.KillCountLog.Clear();
             HuntModel.ScanResults.Clear();
