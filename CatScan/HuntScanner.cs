@@ -1,3 +1,4 @@
+using Dalamud.Game.ClientState.Fates;
 using System.Collections.Generic;
 
 namespace CatScan;
@@ -108,7 +109,7 @@ public class HuntScanner
         activeFate.MapY = ToMapOrd(gameFate.Z, HuntModel.Territory.ZoneData.MapParams.OffsetZ, HuntModel.Territory.ZoneData.MapParams.Scale);
         activeFate.ProgressPct = gameFate.ProgressPct;
 
-        if (gameFate.State != Dalamud.Game.ClientState.Fates.FateState.Preparation)
+        if (gameFate.State != FateState.Preparation)
         {
             activeFate.EndTimeUtc = gameFate.EndTimeUtc ?? System.DateTime.MinValue;
             activeFate.Running = true;
@@ -193,7 +194,8 @@ public class HuntScanner
             // New fate -- only care if its a world boss fate
             activeFate = new ActiveFate(){
                 Name = fate.Name,
-                Epic = HuntData.EpicFates.Contains(fate.Name)
+                Epic = HuntData.EpicFates.Contains(fate.Name),
+                FirstSeenTimeUtc = HuntModel.UtcNow
             };
             HuntModel.ActiveFates.Add(fate.Name, activeFate);
             UpdateActiveFate(activeFate, fate);
@@ -203,6 +205,13 @@ public class HuntScanner
 
     private void OnLostFate(GameFate fate)
     {
+        if ((fate.State != FateState.Ended && fate.ProgressPct < 100.0f)
+         || fate.State == FateState.Failed)
+        {
+            HuntModel.LastFailedFateUtc = HuntModel.UtcNow;
+            HuntModel.LastFailedFateName = fate.Name;
+        }
+
         // If Eureka support is added this would be a good place to clear the kill count for an NM
         HuntModel.ActiveFates.Remove(fate.Name);
     }
@@ -249,8 +258,6 @@ public class HuntScanner
         scanResult.MapX = ToMapOrd(gameEnemy.X, HuntModel.Territory.ZoneData.MapParams.OffsetX, HuntModel.Territory.ZoneData.MapParams.Scale);
         scanResult.MapY = ToMapOrd(gameEnemy.Z, HuntModel.Territory.ZoneData.MapParams.OffsetZ, HuntModel.Territory.ZoneData.MapParams.Scale);
 
-        scanResult.LastSeenTimeUtc = HuntModel.UtcNow;
-
         if (scanResult.HpPct != 0.0 && gameEnemy.HpPct == 0.0)
         {
             scanResult.KillTimeUtc = HuntModel.UtcNow;
@@ -279,6 +286,8 @@ public class HuntScanner
 
         // Clear the active fate list
         HuntModel.ActiveFates.Clear();
+        HuntModel.LastFailedFateUtc = HuntModel.UtcNow;
+        HuntModel.LastFailedFateName = string.Empty;
 
         // Clear non-A rank monsters
         //todo...
@@ -294,7 +303,9 @@ public class HuntScanner
         if (HuntData.Zones.ContainsKey(zoneInfo.ZoneId))
             _gameScanner.EnableScanning();
 
+        // HuntModel handles the saving/loading of zone-cached data itself
         HuntModel.SwitchZone(zoneInfo.WorldId, zoneInfo.ZoneId, zoneInfo.Instance);
         HuntModel.Territory.WorldName = zoneInfo.WorldName;
+        HuntModel.LastZoneChangeUtc = HuntModel.UtcNow;
     }
 }

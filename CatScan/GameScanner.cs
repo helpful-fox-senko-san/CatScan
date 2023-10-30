@@ -532,6 +532,8 @@ public class GameScanner : IDisposable
             {
                 if (state == FateState.WaitingForEnd || state == FateState.Ended)
                 {
+                    cachedFate.State = FateState.Ended;
+                    cachedFate.ProgressPct = (float)fate.Progress;
                     _fateCache.Remove(id);
                     EmitLostFate(cachedFate);
                     continue;
@@ -556,7 +558,7 @@ public class GameScanner : IDisposable
                 if (state != FateState.Preparation)
                 {
                     // TODO: dont update unless something changes
-                    cachedFate.ProgressPct = (float)fate.Progress / 10000.0f;
+                    cachedFate.ProgressPct = (float)fate.Progress;
                     EmitFate(cachedFate);
                 }
             }
