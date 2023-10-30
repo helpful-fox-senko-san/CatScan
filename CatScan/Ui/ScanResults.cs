@@ -72,9 +72,15 @@ public partial class MainWindow : Window, IDisposable
 
         if (HuntModel.ScanResults.Count == 0 && HuntModel.ActiveFates.Count == 0 && !_gameScanner.ScanningEnabled)
         {
-            using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
-            ImGui.Text("");
-            ImGuiHelpers.CenteredText("Scanner disabled in this zone.");
+            {
+                using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
+                ImGui.Text("");
+                ImGuiHelpers.CenteredText("Scanner disabled in this zone.");
+                ImGui.Text("");
+            }
+            ImGuiHelpers.CenterCursorForText("Force Enable Scanner");
+            if (ImGui.Button("Force Enable Scanner"))
+                _gameScanner.EnableScanning();
             return;
         }
 

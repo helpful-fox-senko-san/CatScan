@@ -30,6 +30,10 @@ public partial class MainWindow : Window, IDisposable
 
     private Tabs? _forceOpenTab;
 
+    // Set to true when closed automatically
+    // If set, then the window is re-opened automatically too
+    public bool AutoClosed = false;
+
     public MainWindow(GameScanner gameScanner) : base("CatScan")
     {
         _gameScanner = gameScanner;

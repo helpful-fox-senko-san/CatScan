@@ -23,9 +23,11 @@ public class HuntScanner
     // Event is appropriate to be consumed by notification generators
     public delegate void NewScanResultDelegate(ScanResult scanResult);
     public delegate void NewFateDelegate(ActiveFate fate);
+    public delegate void ZoneChangeDelegate();
 
     public event NewScanResultDelegate? NewScanResult;
     public event NewFateDelegate? NewFate;
+    public event ZoneChangeDelegate? ZoneChange;
 
     public HuntScanner(GameScanner gameScanner)
     {
@@ -307,5 +309,7 @@ public class HuntScanner
         HuntModel.SwitchZone(zoneInfo.WorldId, zoneInfo.ZoneId, zoneInfo.Instance);
         HuntModel.Territory.WorldName = zoneInfo.WorldName;
         HuntModel.LastZoneChangeUtc = HuntModel.UtcNow;
+
+        ZoneChange?.Invoke();
     }
 }
