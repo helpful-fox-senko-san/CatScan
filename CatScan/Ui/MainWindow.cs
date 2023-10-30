@@ -70,7 +70,7 @@ public partial class MainWindow : Window, IDisposable
         // FIXME: There should not be a null dereference here...
         string zoneName = HuntModel.Territory.ZoneData.Name ?? string.Empty;
         if (zoneName.Length == 0 || (zoneName.Length > 0 && zoneName.Substring(0, 1) == "#"))
-            zoneName = DalamudService.GetZoneData(HuntModel.Territory.ZoneId).Name;
+            zoneName = GameData.GetZoneData(HuntModel.Territory.ZoneId).Name;
 
         // There is some excess space at the top of the window
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 2.0f);

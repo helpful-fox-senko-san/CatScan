@@ -201,7 +201,11 @@ static class HuntModel
             foreach (var mark in HuntModel.Territory.ZoneData.Marks)
             {
                 if (mark.Rank == Rank.KC)
-                    CurrentZoneCacheEntry.KillCountLog.Add(mark.Name, new());
+                {
+                    // Have to go through a whole ton of work to try get the localized name...
+                    var name = GameData.TranslateBNpcName(mark.Name);
+                    CurrentZoneCacheEntry.KillCountLog.Add(name, new());
+                }
             }
         }
     }

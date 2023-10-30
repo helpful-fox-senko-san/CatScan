@@ -25,14 +25,16 @@ public class GameZoneInfo
 public class GameEnemy
 {
     public uint ObjectId;
-    public string Name = string.Empty;
+    public uint NameId;
+    // We use the English name to match against known hunt data
+    // But present the client-localized name to the user
+    public string Name => GetName();
+    public string EnglishName => GetEnglishName();
     // raw world coordinates
     public float X;
     public float Z;
     public float HpPct;
 
-    // Set to true for untargetable enemies
-    public bool Ignore = false;
     // This should be set to inform the GameScanner to actively poll information about this enemy
     public bool Interesting = false;
     // Set this instead to only poll for death
@@ -41,12 +43,39 @@ public class GameEnemy
     // Milliseconds since the enemy was last seen in the object table
     // Since the table is scanned progressively, this will fluctuate between approximately 0-100ms
     public double OffscreenTimeMS = 0.0;
+
+    // XXX: This is public -- non-English clients set this to the NPC's rendered name
+    public string? _cachedName;
+    private string? _cachedEnglishName;
+
+    private string GetName()
+    {
+        if (_cachedName != null)
+            return _cachedName;
+
+        // Non-English clients should have set _cachedName already
+        return GetEnglishName();
+    }
+
+    private string GetEnglishName()
+    {
+        if (_cachedEnglishName != null)
+            return _cachedEnglishName;
+
+        _cachedEnglishName = GameData.GetBNpcName(NameId) ?? $"#{NameId}";
+
+        if (GameData.IsEnglish)
+            _cachedName = _cachedEnglishName;
+
+        return _cachedEnglishName;
+    }
 }
 
 public class GameFate
 {
     public uint FateId;
-    public string Name = string.Empty;
+    public string Name => GetName();
+    public string EnglishName => GetEnglishName();
     // raw world coordinates
     public float X;
     public float Z;
@@ -56,6 +85,32 @@ public class GameFate
 
     // Milliseconds since the fate was last seen in the fate table
     public double OffscreenTimeMS = 0.0;
+
+    // XXX: This is public -- non-English clients set this to the NPC's rendered name
+    public string? _cachedName;
+    private string? _cachedEnglishName;
+
+    private string GetName()
+    {
+        if (_cachedName != null)
+            return _cachedName;
+
+        // Non-English clients should have set _cachedName already
+        return GetEnglishName();
+    }
+
+    private string GetEnglishName()
+    {
+        if (_cachedEnglishName != null)
+            return _cachedEnglishName;
+
+        _cachedEnglishName = GameData.GetFateName(FateId) ?? $"#{FateId}";
+
+        if (GameData.IsEnglish)
+            _cachedName = _cachedEnglishName;
+
+        return _cachedEnglishName;
+    }
 }
 
 // Scans the game state for the current zone and visible enemies
@@ -331,19 +386,13 @@ public class GameScanner : IDisposable
         if (maxHp > 0)
             hpPct = (float)bnpc.CurrentHp / (float)maxHp * 100.0f;
 
-        string? customName = null;
-
-        // HACK: Odin uses a player's name, but can be identified by its ID
-        if (bnpc.DataId == 882)
-            customName = "Odin";
-
         var newEnemy = new GameEnemy(){
             ObjectId = id,
-            Name = customName ?? bnpc.Name.ToString(),
+            NameId = bnpc.NameId,
+            _cachedName = GameData.IsEnglish ? null : bnpc.Name.ToString(),
             X = pos.X,
             Z = pos.Z,
-            HpPct = hpPct,
-            Ignore = false // Obsolete: Was used to try flag FATE boss AoEs before
+            HpPct = hpPct
         };
 
         _enemyCache.Add(id, newEnemy);
@@ -584,7 +633,7 @@ public class GameScanner : IDisposable
 
                 cachedFate = new GameFate(){
                     FateId = id,
-                    Name = fate.Name.ToString(),
+                    _cachedName = GameData.IsEnglish ? null : fate.Name.ToString(),
                     X = pos.X,
                     Z = pos.Z,
                     EndTimeUtc = state == FateState.Preparation ? null : System.DateTimeOffset.FromUnixTimeSeconds(startTime + duration).UtcDateTime,
@@ -659,6 +708,10 @@ public class GameScanner : IDisposable
             UnregisterFrameworkUpdate();
             return;
         }
+
+        // Don't scan anything until we've loaded bnpc and fate name data
+        if (!GameData.NameDataReady)
+            return;
 
         try
         {

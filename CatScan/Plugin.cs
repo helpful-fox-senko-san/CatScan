@@ -21,6 +21,8 @@ public sealed class Plugin : IDalamudPlugin
     public Plugin(DalamudPluginInterface pluginInterface)
     {
         DalamudService.Initialize(pluginInterface);
+        GameData.Initialize();
+
         Configuration = DalamudService.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
         _gameScanner = new GameScanner();

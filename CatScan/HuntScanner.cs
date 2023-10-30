@@ -19,7 +19,7 @@ public class HuntScanner
 
     private GameScanner _gameScanner;
     private Dictionary<uint, KCEnemy> _kcEnemies = new();
-    private DalamudService.ZoneData _zoneData = new();
+    private GameData.ZoneData _zoneData = new();
 
     // Event is appropriate to be consumed by notification generators
     public delegate void NewScanResultDelegate(ScanResult scanResult);
@@ -124,7 +124,7 @@ public class HuntScanner
     {
         foreach (var mark in HuntModel.Territory.ZoneData.Marks)
         {
-            if (mark.Name == enemy.Name)
+            if (mark.Name == enemy.EnglishName)
             {
                 // Don't actually log KC monsters as marks
                 if (mark.Rank == Rank.KC)
@@ -198,7 +198,7 @@ public class HuntScanner
             // New fate -- only care if its a world boss fate
             activeFate = new ActiveFate(){
                 Name = fate.Name,
-                Epic = HuntData.EpicFates.Contains(fate.Name),
+                Epic = HuntData.EpicFates.Contains(fate.EnglishName),
                 FirstSeenTimeUtc = HuntModel.UtcNow
             };
             HuntModel.ActiveFates.Add(fate.Name, activeFate);
@@ -307,7 +307,7 @@ public class HuntScanner
         // ---
 
         // Load new zone's game data (map offsets)
-        _zoneData = DalamudService.GetZoneData(zoneInfo.ZoneId);
+        _zoneData = GameData.GetZoneData(zoneInfo.ZoneId);
 
         // Tell GameScanner to scan for enemies if we're in a known hunt zone
         if (HuntData.Zones.ContainsKey(zoneInfo.ZoneId))

@@ -2,7 +2,7 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 
-public partial class DalamudService
+public class DalamudService
 {
     [PluginService] public static DalamudPluginInterface PluginInterface { get; set; } = null!;
     [PluginService] public static IClientState ClientState { get; private set; } = null!;
@@ -18,7 +18,5 @@ public partial class DalamudService
     public static void Initialize(DalamudPluginInterface pluginInterface)
     {
         pluginInterface.Create<DalamudService>();
-
-        InitTerritoryData();
     }
 }
