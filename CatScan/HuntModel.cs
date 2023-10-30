@@ -26,7 +26,7 @@ public class HuntTerritory
 
         // Fill the current zone with dummy data if its not known
         if (!HuntData.Zones.TryGetValue(ZoneId, out cachedZoneData))
-            cachedZoneData = new Zone(Expansion.Unknown, (ZoneId > 0) ? $"#{ZoneId}" : "-", 0);
+            cachedZoneData = new Zone(Expansion.Unknown, string.Empty, 0);
 
         return cachedZoneData;
     }

@@ -69,15 +69,8 @@ public partial class MainWindow : Window, IDisposable
             instanceText = " i" + HuntModel.Territory.Instance;
         // FIXME: There should not be a null dereference here...
         string zoneName = HuntModel.Territory.ZoneData.Name ?? string.Empty;
-        if (zoneName.Length > 0 && zoneName.Substring(0, 1) == "#")
-        {
-            // May as well make the window useful while its visible in unknown zones
-            string? luminaZoneName = DalamudService.GetZoneName(HuntModel.Territory.ZoneId);
-            if (luminaZoneName != null)
-                zoneName = luminaZoneName;
-            else
-                zoneName = $"Zone {zoneName}";
-        }
+        if (zoneName.Length == 0 || (zoneName.Length > 0 && zoneName.Substring(0, 1) == "#"))
+            zoneName = DalamudService.GetZoneData(HuntModel.Territory.ZoneId).Name;
 
         // There is some excess space at the top of the window
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 2.0f);
