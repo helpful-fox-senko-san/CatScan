@@ -28,6 +28,10 @@ public partial class MainWindow : Window, IDisposable
         ImGui.TableSetupColumn("kills", ImGuiTableColumnFlags.WidthFixed);
 
         var eureka = (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka);
+        var bozja = (HuntModel.Territory.ZoneId == 920);
+        var zadnor = (HuntModel.Territory.ZoneId == 975);
+
+        int rowNum = 1;
 
         foreach (var r in HuntModel.KillCountLog)
         {
@@ -48,6 +52,18 @@ public partial class MainWindow : Window, IDisposable
                 else
                     ImGui.Text($" {r.Value.Killed} ");
             }
+
+            if ((bozja && (rowNum == 4 || rowNum == 7))
+             || (zadnor && (rowNum == 4 || rowNum == 8)))
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.Separator();
+                ImGui.TableNextColumn();
+                ImGui.Separator();
+            }
+
+            ++rowNum;
         }
     }
 }

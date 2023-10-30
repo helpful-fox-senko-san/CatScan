@@ -150,6 +150,13 @@ public class Notifications
                 Plugin.Notifications.PlaySfx("ping3.wav");
             HandleAutoOpen(Rank.S, fate.MapX, fate.MapY);
         }
+
+        // Alert for pre-CE fates in Bozja/Zadnor
+        if ((HuntModel.Territory.ZoneId == 920 || HuntModel.Territory.ZoneId == 975) && fate.Epic)
+        {
+            if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertFATE)
+                Plugin.Notifications.PlaySfx("ping3.wav");
+        }
     }
 
     public void OnZoneChange()
