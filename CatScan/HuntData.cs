@@ -270,7 +270,7 @@ public static class HuntData
 
     // -- Eureka
         {732, Eureka_Zone("Eureka Anemos",
-            A("Sabodenter Corrido"), S("The Lord of Anemos"), S("Teles"),
+            S("Sabotender Corrido"), S("The Lord of Anemos"), S("Teles"),
             S("The Emperor of Anemos"), S("Callisto"), S("Number"),
             S("Jahannam"), S("Amemet"), S("Caym"),
             S("Bombadeel"), S("Serket"), S("Judgmental Julika"),
