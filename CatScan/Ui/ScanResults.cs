@@ -22,6 +22,8 @@ public partial class MainWindow : Window, IDisposable
     private Vector4 _textColorDead = RGB(160, 96, 96);
     private Vector4 _textColorGone = RGB(160, 160, 160);
 
+    private System.DateTime _hideDeadCutoffEurekaUtc = System.DateTime.MinValue;
+
     private void InitScanResults()
     {
         DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "B.png")).ContinueWith(icon => {
@@ -143,17 +145,41 @@ public partial class MainWindow : Window, IDisposable
         ImGui.TableSetupColumn("icon", ImGuiTableColumnFlags.WidthFixed);
         ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
 
+        var eureka = (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka);
+        var bozja = (HuntModel.Territory.ZoneData.Expansion == Expansion.Bozja);
+
         var resultList = new List<ScanResult>(HuntModel.ScanResults.Values);
 
         resultList.Sort((ScanResult a, ScanResult b) => {
             if (a.Rank == b.Rank)
-                return a.Name.CompareTo(b.Name);
+            {
+                if (a.Dead == b.Dead || !eureka)
+                    return a.Name.CompareTo(b.Name);
+                else
+                    return a.Dead ? 1 : -1;
+            }
             else
                 return b.Rank - a.Rank;
         });
 
+        int numClearable = 0;
+
         foreach (var r in resultList)
         {
+            // Eureka NMs stack up fast and they're not too useful to list long term in their current state
+            // Provide a feature to clear them -- note that Missing is effectively Dead for NMs
+            if ((r.Dead || r.Missing) && eureka)
+            {
+                if (r.LastSeenTimeUtc < _hideDeadCutoffEurekaUtc)
+                    continue;
+                else
+                    ++numClearable;
+            }
+
+            // Likewise star ranks aren't really worth tracking at all, especially because they never move
+            if (r.Missing && bozja)
+                continue;
+
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
             DrawRankIcon(r.Rank);
@@ -175,6 +201,13 @@ public partial class MainWindow : Window, IDisposable
             using var pushColor3 = ImRaii.PushColor(ImGuiCol.HeaderActive, RGB(64, 64, 64));
             if (ImGui.Selectable($"{r.Name} ( {r.MapX:F1} , {r.MapY:F1} ) HP: {r.HpPct:F1}%"))
                 GameFunctions.DoMapLink(r.MapX, r.MapY);
+        }
+
+        if (eureka && numClearable > 0)
+        {
+            ImGuiHelpers.CenterCursorForText("Clear Dead NMs");
+            if (ImGui.Button("Clear Dead NMs"))
+                _hideDeadCutoffEurekaUtc = HuntModel.UtcNow;
         }
     }
 }
