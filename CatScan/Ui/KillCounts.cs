@@ -23,6 +23,7 @@ public partial class MainWindow : Window, IDisposable
             return;
         }
 
+        using var pushCellPadding = ImRaii.PushStyle(ImGuiStyleVar.CellPadding, new System.Numerics.Vector2(2.0f, 0.0f), HuntModel.KillCountLog.Count > 4);
         using var table = ImRaii.Table("KillCountsTable", 2);
         ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableSetupColumn("kills", ImGuiTableColumnFlags.WidthFixed);
@@ -36,21 +37,21 @@ public partial class MainWindow : Window, IDisposable
         foreach (var r in HuntModel.KillCountLog)
         {
             // XXX: Hide zero-kill KC mobs in eureka
-            if (eureka && r.Value.Killed == 0)
+            if (eureka && r.Killed == 0)
                 continue;
 
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
-            ImGui.Text($"{r.Key}");
+            ImGui.Text($"{r.Name}");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
             using (ImRaii.PushColor(ImGuiCol.Text, _textColorKc))
             {
                 if (Plugin.Configuration.ShowMissingKC)
-                    ImGui.Text($" {r.Value.Killed} ～ {r.Value.Killed+r.Value.Missing} ");
+                    ImGui.Text($" {r.Killed} ～ {r.Killed+r.Missing} ");
                 else
-                    ImGui.Text($" {r.Value.Killed} ");
+                    ImGui.Text($" {r.Killed} ");
             }
 
             if ((bozja && (rowNum == 4 || rowNum == 7))
@@ -64,6 +65,18 @@ public partial class MainWindow : Window, IDisposable
             }
 
             ++rowNum;
+        }
+
+        table.Dispose();
+
+        if (eureka && rowNum > 1)
+        {
+            ImGuiHelpers.CenterCursorForText("Clear Log");
+            if (ImGui.Button("Clear Log"))
+            {
+                foreach (var r in HuntModel.KillCountLog)
+                    r.Killed = 0;
+            }
         }
     }
 }

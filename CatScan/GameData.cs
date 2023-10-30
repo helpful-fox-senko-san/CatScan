@@ -30,6 +30,12 @@ public class GameData
     private static Dictionary<uint, string> _bnpcNameIdToString = new();
     private static Dictionary<uint, string> _fateIdToString = new();
 
+    // Debug
+    internal static int BNpcNameCacheSize => _bnpcNameIdToString.Count;
+    internal static int FateNameCacheSize => _fateIdToString.Count;
+    internal static Dictionary<uint, string> BNpcNameCache => _bnpcNameIdToString;
+    internal static Dictionary<uint, string> FateNameCache => _fateIdToString;
+
     public static bool IsEnglish;
     public static bool NameDataReady;
 
