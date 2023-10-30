@@ -62,7 +62,7 @@ public partial class MainWindow : Window, IDisposable
         _forceOpenTab = tab;
     }
 
-    public override void Draw()
+    public void DrawMainWindow()
     {
         string instanceText = "";
         if (HuntModel.Territory.Instance > 0)
@@ -99,5 +99,17 @@ public partial class MainWindow : Window, IDisposable
         doTab("Config", Tabs.Config, DrawConfig);
         if (Plugin.Configuration.DebugEnabled)
             doTab("Debug", Tabs.Config, DrawDebug);
+    }
+
+    public override void Draw()
+    {
+        try
+        {
+            DrawMainWindow();
+        }
+        catch (Exception ex)
+        {
+            DalamudService.Log.Error(ex, "Draw");
+        }
     }
 }

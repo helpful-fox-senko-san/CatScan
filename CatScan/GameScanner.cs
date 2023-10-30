@@ -159,6 +159,9 @@ public class GameScanner : IDisposable
     internal bool TerritoryChanged => _territoryChanged;
     internal bool ScanningEnabled => _scanningEnabled;
     internal bool FrameworkUpdateRegistered => _frameworkUpdateRegistered;
+    internal Dictionary<uint, GameEnemy> EnemyCache => _enemyCache;
+    internal Dictionary<uint, GameFate> FateCache => _fateCache;
+    internal HashSet<uint> LostIds => _lostIds;
 
     private bool _emitTaskActive = false;
     private TaskCompletionSource _emitTaskPokeSource = new();
@@ -362,10 +365,7 @@ public class GameScanner : IDisposable
             // TerritoryChanged event triggered before BetweenAreas flag was read?
             // Ignore the condition to avoid shutting off the scanner again
             if (_territoryChanged && value)
-            {
-                DalamudService.Log.Warning("TerritoryChanged was triggered before BetweenAreas51");
                 value = false;
-            }
 
             _betweenAreas = value;
 

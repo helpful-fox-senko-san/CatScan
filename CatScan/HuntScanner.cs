@@ -58,16 +58,10 @@ public class HuntScanner
 
         // Clear kill count data after an S rank is killed
         // It could be cleared when it spawns instead, but you may want some time to see the final count
-        foreach (var mark in HuntModel.Territory.ZoneData.Marks)
+        foreach (var kcLogEntry in HuntModel.KillCountLog)
         {
-            if (mark.Rank == Rank.KC)
-            {
-                if (HuntModel.KillCountLog.TryGetValue(mark.Name, out var kcLogEntry))
-                {
-                    kcLogEntry.Killed = 0;
-                    kcLogEntry.Missing = 0;
-                }
-            }
+            kcLogEntry.Killed = 0;
+            kcLogEntry.Missing = 0;
         }
 
         _kcEnemies.Clear();
@@ -76,10 +70,14 @@ public class HuntScanner
     private void KilledSS()
     {
         // Clear minion scan results after an SS is killed
-        foreach (var mark in HuntModel.Territory.ZoneData.Marks)
+        // Removing one entry is enough, since only one is ever logged
+        foreach (var result in HuntModel.ScanResults)
         {
-            if (mark.Rank == Rank.Minion)
-                HuntModel.ScanResults.Remove(mark.Name);
+            if (result.Value.Rank == Rank.Minion)
+            {
+                HuntModel.ScanResults.Remove(result.Key);
+                break;
+            }
         }
     }
 
@@ -145,7 +143,7 @@ public class HuntScanner
                 // New object ID with the same name as an already logged mark
                 // This is either a respawn, a bug, or in the case of SS minions: expected
                 // ... oops, this can also happen when entering a zone with a saved scan list
-                if (HuntModel.ScanResults.TryGetValue(enemy.Name, out var scanResult))
+                if (HuntModel.ScanResults.TryGetValue(enemy.NameId, out var scanResult))
                 {
                     UpdateScanResult(scanResult, enemy);
                     NewScanResult?.Invoke(scanResult);
@@ -154,7 +152,7 @@ public class HuntScanner
                 }
                 else
                 {
-                    HuntModel.ScanResults.Add(mark.Name, scanResult = new ScanResult(){
+                    HuntModel.ScanResults.Add(enemy.NameId, scanResult = new ScanResult(){
                         Rank = mark.Rank,
                         Name = enemy.Name,
                         Missing = false
@@ -173,7 +171,7 @@ public class HuntScanner
     private void OnLostEnemy(GameEnemy enemy)
     {
         // Its not possible to tell if a KC mob dies while out of range, so keep count of them
-        if (_kcEnemies.TryGetValue(enemy.ObjectId, out var kcEnemy) && HuntModel.KillCountLog.TryGetValue(enemy.Name, out var kcLogEntry))
+        if (_kcEnemies.TryGetValue(enemy.ObjectId, out var kcEnemy) && HuntModel.TryGetKillCount(enemy.Name, out var kcLogEntry))
         {
             if (!kcEnemy.Missing)
             {
@@ -182,14 +180,14 @@ public class HuntScanner
             }
         }
 
-        if (HuntModel.ScanResults.TryGetValue(enemy.Name, out var scanResult))
+        if (HuntModel.ScanResults.TryGetValue(enemy.NameId, out var scanResult))
             scanResult.Missing = true;
     }
 
     private void OnFate(GameFate fate)
     {
         // Update to an already recorded FATE
-        if (HuntModel.ActiveFates.TryGetValue(fate.Name, out var activeFate))
+        if (HuntModel.ActiveFates.TryGetValue(fate.FateId, out var activeFate))
         {
             UpdateActiveFate(activeFate, fate);
         }
@@ -201,7 +199,7 @@ public class HuntScanner
                 Epic = HuntData.EpicFates.Contains(fate.EnglishName),
                 FirstSeenTimeUtc = HuntModel.UtcNow
             };
-            HuntModel.ActiveFates.Add(fate.Name, activeFate);
+            HuntModel.ActiveFates.Add(fate.FateId, activeFate);
             UpdateActiveFate(activeFate, fate);
             NewFate?.Invoke(activeFate);
         }
@@ -217,13 +215,13 @@ public class HuntScanner
         }
 
         // If Eureka support is added this would be a good place to clear the kill count for an NM
-        HuntModel.ActiveFates.Remove(fate.Name);
+        HuntModel.ActiveFates.Remove(fate.FateId);
     }
 
     private void OnUpdatedEnemy(GameEnemy enemy)
     {
         // This is a KC mob dying or coming back in range
-        if (_kcEnemies.TryGetValue(enemy.ObjectId, out var kcEnemy) && HuntModel.KillCountLog.TryGetValue(enemy.Name, out var kcLogEntry))
+        if (_kcEnemies.TryGetValue(enemy.ObjectId, out var kcEnemy) && HuntModel.TryGetKillCount(enemy.Name, out var kcLogEntry))
         {
             if (kcEnemy.Missing)
             {
@@ -240,7 +238,7 @@ public class HuntScanner
             }
         }
 
-        if (HuntModel.ScanResults.TryGetValue(enemy.Name, out var scanResult))
+        if (HuntModel.ScanResults.TryGetValue(enemy.NameId, out var scanResult))
         {
             // If the enemy was missing, it needs to be be re-marked as Interesting to the GameScanner
             if (scanResult.Missing)
@@ -281,7 +279,7 @@ public class HuntScanner
         {
             if (kcEnemy.Missing)
             {
-                if (HuntModel.KillCountLog.TryGetValue(kcEnemy.Name, out var kcLogEntry))
+                if (HuntModel.TryGetKillCount(kcEnemy.Name, out var kcLogEntry))
                     --kcLogEntry.Missing;
             }
         }
@@ -300,8 +298,13 @@ public class HuntScanner
         if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka
          || HuntModel.Territory.ZoneData.Expansion == Expansion.Bozja)
         {
-            HuntModel.KillCountLog.Clear();
-            HuntModel.ScanResults.Clear();
+            // An unneccessary call happens after debug deserialization
+            // Avoid wiping out data by checking for this case
+            if (zoneInfo.ZoneId != HuntModel.Territory.ZoneId)
+            {
+                HuntModel.KillCountLog.Clear();
+                HuntModel.ScanResults.Clear();
+            }
         }
 
         // ---

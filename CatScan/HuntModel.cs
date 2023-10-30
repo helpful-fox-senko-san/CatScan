@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -82,6 +83,7 @@ public class ActiveFate
 
 public class KillCount
 {
+    public string Name = string.Empty;
     public int Killed;
     public int Missing;
 }
@@ -111,8 +113,8 @@ public readonly struct ZoneCacheKey
 
 public class ZoneCacheEntry
 {
-    public Dictionary<string, ScanResult> ScanResults = new();
-    public Dictionary<string, KillCount> KillCountLog = new();
+    public Dictionary<uint, ScanResult> ScanResults = new();
+    public List<KillCount> KillCountLog = new();
 }
 
 static class HuntModel
@@ -127,11 +129,10 @@ static class HuntModel
 
     // A list of hunt marks that have been detected in the current zone
     // XXX: Since these are keyed by the monster's name, only one SS minion can be recorded at a time
-    // XXX: Some epic fate bosses can get fucked up by duplicate entries too
-    public static Dictionary<string, ScanResult> ScanResults => CurrentZoneCacheEntry.ScanResults;
+    public static Dictionary<uint, ScanResult> ScanResults => CurrentZoneCacheEntry.ScanResults;
 
     // A list of kc monsters in the current zone, and their kill counts
-    public static Dictionary<string, KillCount> KillCountLog => CurrentZoneCacheEntry.KillCountLog;
+    public static List<KillCount> KillCountLog => CurrentZoneCacheEntry.KillCountLog;
 
     // --- Fields NOT stored in the zone cache
 
@@ -141,9 +142,8 @@ static class HuntModel
     // and failed, at least in Southern Thanalan.
 
     // A list of active FATEs
-    public static Dictionary<string, ActiveFate> ActiveFates = new();
+    public static Dictionary<uint, ActiveFate> ActiveFates = new();
 
-    // A list of active FATEs
     public static System.DateTime LastFailedFateUtc = System.DateTime.MinValue;
     public static string LastFailedFateName = string.Empty;
 
@@ -159,6 +159,23 @@ static class HuntModel
         CurrentZoneCacheEntry = new();
     }
 
+    // Look up a KillCount log entry by NPC name
+    public static bool TryGetKillCount(string name, [MaybeNullWhen(false)] out KillCount value)
+    {
+        foreach (var kc in KillCountLog)
+        {
+            // XXX: Almost certainly not capitalizing KC mob names correctly when pre-filling, so case-insensitive
+            if (kc.Name.Equals(name, System.StringComparison.InvariantCultureIgnoreCase))
+            {
+                value = kc;
+                return true;
+            }
+        }
+
+        value = null;
+        return false;
+    }
+
     // Save the current zone data, and load data for the new zone
     public static void SwitchZone(int worldId, int zoneId, int instance)
     {
@@ -170,7 +187,7 @@ static class HuntModel
 
             if (!hasData)
             {
-                foreach (var e in KillCountLog.Values)
+                foreach (var e in KillCountLog)
                 {
                     if (e.Killed > 0 || e.Missing > 0)
                     {
@@ -202,9 +219,9 @@ static class HuntModel
             {
                 if (mark.Rank == Rank.KC)
                 {
-                    // Have to go through a whole ton of work to try get the localized name...
+                    // Have to go through a whole ton of work to try get a localized name...
                     var name = GameData.TranslateBNpcName(mark.Name);
-                    CurrentZoneCacheEntry.KillCountLog.Add(name, new());
+                    CurrentZoneCacheEntry.KillCountLog.Add(new(){ Name = name });
                 }
             }
         }
@@ -245,8 +262,7 @@ static class HuntModel
                 ZoneCache.Add(r.Key, r.Value);
         }
 
-        // Update the current zone reference
-        if (Territory.IsValid())
-            SwitchZone(Territory.WorldId, Territory.ZoneId, Territory.Instance);
+        // After deserialization we need to update the current zone reference
+        CurrentZoneCacheEntry = ForZone(Territory.ZoneId, Territory.Instance);
     }
 }
