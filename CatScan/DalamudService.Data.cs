@@ -30,7 +30,7 @@ public partial class DalamudService
         if (territoryRow != null)
         {
             zoneData.MapId = territoryRow.Map.Row;
-        	zoneData.Name = territoryRow?.PlaceName?.Value?.Name?.ToString() ?? "#" + zoneId;
+            zoneData.Name = territoryRow?.PlaceName?.Value?.Name?.ToString() ?? "#" + zoneId;
 
             var mapRow = _mapExcel?.GetRow(zoneData.MapId);
 
@@ -69,7 +69,7 @@ public partial class DalamudService
         if (_mapExcel == null)
             throw new System.Exception("Map data not available");
 
-		// Pre-load data for known zones
+        // Pre-load data for known zones
         foreach (var territoryId in CatScan.HuntData.Zones.Keys)
             CacheZoneData(territoryId);
     }
