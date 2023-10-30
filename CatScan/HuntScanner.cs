@@ -19,6 +19,7 @@ public class HuntScanner
 
     private GameScanner _gameScanner;
     private Dictionary<uint, KCEnemy> _kcEnemies = new();
+    private DalamudService.ZoneData _zoneData = new();
 
     // Event is appropriate to be consumed by notification generators
     public delegate void NewScanResultDelegate(ScanResult scanResult);
@@ -88,8 +89,8 @@ public class HuntScanner
         // name and rank are never updated
         scanResult.RawX = gameEnemy.X;
         scanResult.RawZ = gameEnemy.Z;
-        scanResult.MapX = ToMapOrd(gameEnemy.X, HuntModel.Territory.ZoneData.MapParams.OffsetX, HuntModel.Territory.ZoneData.MapParams.Scale);
-        scanResult.MapY = ToMapOrd(gameEnemy.Z, HuntModel.Territory.ZoneData.MapParams.OffsetZ, HuntModel.Territory.ZoneData.MapParams.Scale);
+        scanResult.MapX = ToMapOrd(gameEnemy.X, _zoneData.MapOffsetX, _zoneData.MapScale);
+        scanResult.MapY = ToMapOrd(gameEnemy.Z, _zoneData.MapOffsetY, _zoneData.MapScale);
 
         scanResult.LastSeenTimeUtc = HuntModel.UtcNow;
 
@@ -108,8 +109,8 @@ public class HuntScanner
     {
         activeFate.RawX = gameFate.X;
         activeFate.RawZ = gameFate.Z;
-        activeFate.MapX = ToMapOrd(gameFate.X, HuntModel.Territory.ZoneData.MapParams.OffsetX, HuntModel.Territory.ZoneData.MapParams.Scale);
-        activeFate.MapY = ToMapOrd(gameFate.Z, HuntModel.Territory.ZoneData.MapParams.OffsetZ, HuntModel.Territory.ZoneData.MapParams.Scale);
+        activeFate.MapX = ToMapOrd(gameFate.X, _zoneData.MapOffsetX, _zoneData.MapScale);
+        activeFate.MapY = ToMapOrd(gameFate.Z, _zoneData.MapOffsetY, _zoneData.MapScale);
         activeFate.ProgressPct = gameFate.ProgressPct;
 
         if (gameFate.State != FateState.Preparation)
@@ -258,8 +259,8 @@ public class HuntScanner
         // name and rank are never updated
         scanResult.RawX = gameEnemy.X;
         scanResult.RawZ = gameEnemy.Z;
-        scanResult.MapX = ToMapOrd(gameEnemy.X, HuntModel.Territory.ZoneData.MapParams.OffsetX, HuntModel.Territory.ZoneData.MapParams.Scale);
-        scanResult.MapY = ToMapOrd(gameEnemy.Z, HuntModel.Territory.ZoneData.MapParams.OffsetZ, HuntModel.Territory.ZoneData.MapParams.Scale);
+        scanResult.MapX = ToMapOrd(gameEnemy.X, _zoneData.MapOffsetX, _zoneData.MapScale);
+        scanResult.MapY = ToMapOrd(gameEnemy.Z, _zoneData.MapOffsetY, _zoneData.MapScale);
 
         if (scanResult.HpPct != 0.0 && gameEnemy.HpPct == 0.0)
         {
@@ -302,6 +303,11 @@ public class HuntScanner
             HuntModel.KillCountLog.Clear();
             HuntModel.ScanResults.Clear();
         }
+
+        // ---
+
+        // Load new zone's game data (map offsets)
+        _zoneData = DalamudService.GetZoneData(zoneInfo.ZoneId);
 
         // Tell GameScanner to scan for enemies if we're in a known hunt zone
         if (HuntData.Zones.ContainsKey(zoneInfo.ZoneId))

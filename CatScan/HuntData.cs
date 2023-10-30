@@ -37,35 +37,10 @@ public readonly struct Mark
     }
 }
 
-public readonly struct ZoneMapParams
-{
-    public readonly float OffsetX;
-    public readonly float OffsetZ;
-    public readonly float Scale;
-
-    public ZoneMapParams(float x, float y, float scale = 1.0f)
-    {
-        OffsetX = x;
-        OffsetZ = y;
-        Scale = scale;
-    }
-
-    public static ZoneMapParams MakeDefault()
-    {
-        return new ZoneMapParams(0.0f, 0.0f, 1.0f);
-    }
-
-    public static ZoneMapParams MakeScaled(float scale)
-    {
-        return new ZoneMapParams(0.0f, 0.0f, scale);
-    }
-}
-
 public readonly struct Zone
 {
     public readonly Expansion Expansion;
     public readonly string Name;
-    public readonly ZoneMapParams MapParams;
     public readonly int Instances;
     public readonly Mark[] Marks;
 
@@ -73,16 +48,6 @@ public readonly struct Zone
     {
         Expansion = expansion;
         Name = name;
-        MapParams = ZoneMapParams.MakeDefault();
-        Instances = instances;
-        Marks = marks;
-    }
-
-    public Zone(Expansion expansion, string name, ZoneMapParams mapParams, int instances, params Mark[] marks)
-    {
-        Expansion = expansion;
-        Name = name;
-        MapParams = mapParams;
         Instances = instances;
         Marks = marks;
     }
@@ -108,10 +73,9 @@ public static class HuntData
         return new Zone(Expansion.ARR, name, instances, marks);
     }
 
-    // All of the Heavensward field maps have a map scale of 0.95
     private static Zone HW_Zone(string name, int instances, params Mark[] marks)
     {
-        return new Zone(Expansion.HW, name, ZoneMapParams.MakeScaled(0.95f), instances, marks);
+        return new Zone(Expansion.HW, name, instances, marks);
     }
 
     private static Zone SB_Zone(string name, int instances, params Mark[] marks)
@@ -139,19 +103,13 @@ public static class HuntData
         return new Zone(Expansion.EW, name, instances, m2);
     }
 
-    // XXX: Hydatos has a map offset parameter
     private static Zone Eureka_Zone(string name, params Mark[] marks)
     {
-        if (name == "Eureka Hydatos")
-            return new Zone(Expansion.Bozja, name, new ZoneMapParams(0.0f, -9.5f), 9, marks);
         return new Zone(Expansion.Eureka, name, 9, marks);
     }
 
-    // XXX: Bozjan Southern Front has map offset parameters
     private static Zone Bozja_Zone(string name, params Mark[] marks)
     {
-        if (name == "Bozjan Southern Front")
-            return new Zone(Expansion.Bozja, name, new ZoneMapParams(2.54f, 8.48f), 9, marks);
         return new Zone(Expansion.Bozja, name, 9, marks);
     }
 
