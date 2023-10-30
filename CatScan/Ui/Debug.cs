@@ -1,4 +1,5 @@
 using Dalamud.Interface.Windowing;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using System;
 
@@ -8,6 +9,8 @@ public partial class MainWindow : Window, IDisposable
 {
     private void DrawDebug()
     {
+        using var tabId = ImRaii.PushId("Debug");
+
         ImGui.Text($"GameScanner:");
         ImGui.Text($"  - BetweenAreas: {_gameScanner.BetweenAreas}");
         ImGui.Text($"  - TerritoryChanged: {_gameScanner.TerritoryChanged}");

@@ -21,10 +21,10 @@ public class HuntScanner
 
     // Event is appropriate to be consumed by notification generators
     public delegate void NewScanResultDelegate(ScanResult scanResult);
-    public delegate void NewEpicFateDelegate(ActiveFate fate);
+    public delegate void NewFateDelegate(ActiveFate fate);
 
     public event NewScanResultDelegate? NewScanResult;
-    public event NewEpicFateDelegate? NewEpicFate;
+    public event NewFateDelegate? NewFate;
 
     public HuntScanner(GameScanner gameScanner)
     {
@@ -106,6 +106,7 @@ public class HuntScanner
         activeFate.RawZ = gameFate.Z;
         activeFate.MapX = ToMapOrd(gameFate.X, HuntModel.Territory.ZoneData.MapParams.OffsetX, HuntModel.Territory.ZoneData.MapParams.Scale);
         activeFate.MapY = ToMapOrd(gameFate.Z, HuntModel.Territory.ZoneData.MapParams.OffsetZ, HuntModel.Territory.ZoneData.MapParams.Scale);
+        activeFate.ProgressPct = gameFate.ProgressPct;
 
         if (gameFate.State != Dalamud.Game.ClientState.Fates.FateState.Preparation)
         {
@@ -190,15 +191,13 @@ public class HuntScanner
         else
         {
             // New fate -- only care if its a world boss fate
-            if (HuntData.EpicFates.Contains(fate.Name))
-            {
-                activeFate = new ActiveFate(){
-                    Name = fate.Name
-                };
-                HuntModel.ActiveFates.Add(fate.Name, activeFate);
-                UpdateActiveFate(activeFate, fate);
-                NewEpicFate?.Invoke(activeFate);
-            }
+            activeFate = new ActiveFate(){
+                Name = fate.Name,
+                Epic = HuntData.EpicFates.Contains(fate.Name)
+            };
+            HuntModel.ActiveFates.Add(fate.Name, activeFate);
+            UpdateActiveFate(activeFate, fate);
+            NewFate?.Invoke(activeFate);
         }
     }
 

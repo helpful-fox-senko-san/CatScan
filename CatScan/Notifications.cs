@@ -46,7 +46,7 @@ public class Notifications
     {
         _huntScanner = huntScanner;
         _huntScanner.NewScanResult += OnNewScanResult;
-        _huntScanner.NewEpicFate += OnNewEpicFate;
+        _huntScanner.NewFate += OnNewFate;
         _resourcePath = Path.Combine(DalamudService.PluginInterface.AssemblyLocation.Directory?.FullName!, "Resources");
 
         PreloadSfx("ping1.wav");
@@ -130,7 +130,7 @@ public class Notifications
         HandleAutoOpen(scanResult.Rank, scanResult.MapX, scanResult.MapY);
     }
 
-    public void OnNewEpicFate(ActiveFate fate)
+    public void OnNewFate(ActiveFate fate)
     {
         _coeurlHackFlag = false;
 
