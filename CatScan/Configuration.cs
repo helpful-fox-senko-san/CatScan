@@ -27,6 +27,8 @@ public class Configuration : IPluginConfiguration
     public bool AutoFlagFATE { get; set; } = false;
     public bool AutoFlagS { get; set; } = false;
 
+    public bool AutoCloseEnabled { get; set; } = false;
+
     public bool ShowMissingKC { get; set; } = false;
 
     public void Save()

@@ -137,6 +137,18 @@ public partial class MainWindow : Window, IDisposable
 
         ImGui.Separator();
 
+        b = Plugin.Configuration.AutoCloseEnabled;
+        if (ImGui.Checkbox("Hide Window Automatically", ref b))
+        {
+            Plugin.Configuration.AutoCloseEnabled = b;
+            Plugin.Configuration.Save();
+        }
+
+        // XXX: This should also say "and in duties", but probably doesn't work as intended in quest duties and guildhests?
+        ImGui.TextWrapped("Hide temporarily while in non-hunt zones.");
+
+        ImGui.Separator();
+
         b = Plugin.Configuration.ShowMissingKC;
         if (ImGui.Checkbox("Count missing KC mobs", ref b))
         {

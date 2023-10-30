@@ -47,6 +47,7 @@ public class Notifications
         _huntScanner = huntScanner;
         _huntScanner.NewScanResult += OnNewScanResult;
         _huntScanner.NewFate += OnNewFate;
+        _huntScanner.ZoneChange += OnZoneChange;
         _resourcePath = Path.Combine(DalamudService.PluginInterface.AssemblyLocation.Directory?.FullName!, "Resources");
 
         PreloadSfx("ping1.wav");
@@ -148,6 +149,22 @@ public class Notifications
             if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertS)
                 Plugin.Notifications.PlaySfx("ping3.wav");
             HandleAutoOpen(Rank.S, fate.MapX, fate.MapY);
+        }
+    }
+
+    public void OnZoneChange()
+    {
+        var isHuntZone = HuntData.Zones.ContainsKey(HuntModel.Territory.ZoneId);
+
+        if (!isHuntZone && Plugin.MainWindow.IsOpen)
+        {
+            Plugin.MainWindow.IsOpen = false;
+            Plugin.MainWindow.AutoClosed = true;
+        }
+        else if (isHuntZone && Plugin.MainWindow.AutoClosed)
+        {
+            Plugin.MainWindow.IsOpen = true;
+            Plugin.MainWindow.AutoClosed = false;
         }
     }
 }
