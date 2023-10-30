@@ -76,24 +76,8 @@ public partial class MainWindow : Window, IDisposable
             ImGui.Text("");
     }
 
-    private void DrawScanResults()
+    private void DrawEpicFateBar()
     {
-        using var tabId = ImRaii.PushId("ScanResults");
-
-        if (HuntModel.ScanResults.Count == 0 && HuntModel.ActiveFates.Count == 0 && !_gameScanner.ScanningEnabled)
-        {
-            {
-                using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
-                ImGui.Text("");
-                ImGuiHelpers.CenteredText("Scanner disabled in this zone.");
-                ImGui.Text("");
-            }
-            ImGuiHelpers.CenterCursorForText("Force Enable Scanner");
-            if (ImGui.Button("Force Enable Scanner"))
-                _gameScanner.EnableScanning();
-            return;
-        }
-
         var epicFateList = new List<ActiveFate>(HuntModel.ActiveFates.Values);
         epicFateList.RemoveAll((x) => !x.Epic);
 
@@ -118,7 +102,6 @@ public partial class MainWindow : Window, IDisposable
                 var timeRemaining = f.TimeRemaining;
                 if (f.Running)
                 {
-                    // The fate has ended so it should not be visible anymore
                     if (timeRemaining <= TimeSpan.Zero)
                         timeRemaining = TimeSpan.Zero;
 
@@ -134,6 +117,27 @@ public partial class MainWindow : Window, IDisposable
                 ImGuiHelpers.CenteredText(str);
             }
         }
+    }
+
+    private void DrawScanResults()
+    {
+        using var tabId = ImRaii.PushId("ScanResults");
+
+        if (HuntModel.ScanResults.Count == 0 && HuntModel.ActiveFates.Count == 0 && !_gameScanner.ScanningEnabled)
+        {
+            {
+                using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
+                ImGui.Text("");
+                ImGuiHelpers.CenteredText("Scanner disabled in this zone.");
+                ImGui.Text("");
+            }
+            ImGuiHelpers.CenterCursorForText("Force Enable Scanner");
+            if (ImGui.Button("Force Enable Scanner"))
+                _gameScanner.EnableScanning();
+            return;
+        }
+
+        DrawEpicFateBar();
 
         using var table = ImRaii.Table("ScanResultsTable", 2);
         ImGui.TableSetupColumn("icon", ImGuiTableColumnFlags.WidthFixed);

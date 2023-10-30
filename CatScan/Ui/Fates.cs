@@ -28,6 +28,8 @@ public partial class MainWindow : Window, IDisposable
             return;
         }
 
+        DrawEpicFateBar();
+
         var fateList = new List<ActiveFate>(HuntModel.ActiveFates.Values);
 
         // TODO: Need to display an estimate of how long a fate has been in preparation phase
