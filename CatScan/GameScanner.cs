@@ -619,7 +619,7 @@ public class GameScanner : IDisposable
     {
         // No need to do anything while not logged in
         // If between areas, a territory change is probably about to happen -- don't scan to avoid mixing up zones
-        if (!DalamudService.ClientState.IsLoggedIn || _betweenAreas)
+        if (!DalamudService.ClientState.IsLoggedIn || (_betweenAreas && !_territoryChanged))
         {
             ClearCache();
             UnregisterFrameworkUpdate();
