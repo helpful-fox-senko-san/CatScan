@@ -16,6 +16,7 @@ public partial class MainWindow : Window, IDisposable
     private IDalamudTextureWrap? _iconA;
     private IDalamudTextureWrap? _iconS;
     private IDalamudTextureWrap? _iconF;
+    private IDalamudTextureWrap? _iconStar;
 
     private Vector4 _textColorPulled = RGB(224, 96, 96);
     private Vector4 _textColorDead = RGB(160, 96, 96);
@@ -38,6 +39,10 @@ public partial class MainWindow : Window, IDisposable
         DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "F.png")).ContinueWith(icon => {
             _iconF = icon.Result;
         });
+
+        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "Star.png")).ContinueWith(icon => {
+            _iconStar = icon.Result;
+        });
     }
 
     private void DrawRankIcon(Rank rank)
@@ -59,6 +64,11 @@ public partial class MainWindow : Window, IDisposable
                 icon = _iconF;
                 break;
         }
+
+        // Display Eureka NMs / Bozja star mobs using a star icon
+        if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka
+         || HuntModel.Territory.ZoneData.Expansion == Expansion.Bozja)
+            icon = _iconStar;
 
         if (icon != null)
             ImGui.Image(icon.ImGuiHandle, new(24, 24));

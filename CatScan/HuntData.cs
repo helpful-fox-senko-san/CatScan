@@ -373,7 +373,6 @@ public static class HuntData
         // TODO: Highlight pre-CE fates in a less obnoxious way?
         // TODO: Mark which fates and KCs belong to which zone?
         // XXX: Dividers between kc mobs are hard-coded in UI code
-        // XXX: Using B ranks for star mobs -- A ranks get saved in zone cache
 
         {920, Bozja_Zone("Bozjan Southern Front",
             B("Ink Claw"),
