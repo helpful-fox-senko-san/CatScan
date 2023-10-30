@@ -43,7 +43,7 @@ public readonly struct ZoneMapParams
     public readonly float OffsetZ;
     public readonly float Scale;
 
-    public ZoneMapParams(float x, float y, float scale)
+    public ZoneMapParams(float x, float y, float scale = 1.0f)
     {
         OffsetX = x;
         OffsetZ = y;
@@ -139,13 +139,19 @@ public static class HuntData
         return new Zone(Expansion.EW, name, instances, m2);
     }
 
+    // XXX: Hydatos has a map offset parameter
     private static Zone Eureka_Zone(string name, params Mark[] marks)
     {
+        if (name == "Eureka Hydatos")
+            return new Zone(Expansion.Bozja, name, new ZoneMapParams(0.0f, -9.5f), 9, marks);
         return new Zone(Expansion.Eureka, name, 9, marks);
     }
 
+    // XXX: Bozjan Southern Front has map offset parameters
     private static Zone Bozja_Zone(string name, params Mark[] marks)
     {
+        if (name == "Bozjan Southern Front")
+            return new Zone(Expansion.Bozja, name, new ZoneMapParams(2.54f, 8.48f), 9, marks);
         return new Zone(Expansion.Bozja, name, 9, marks);
     }
 
@@ -400,6 +406,16 @@ public static class HuntData
         )},
 
         {975, Bozja_Zone("Zadnor",
+            B("Anancus"),
+            B("Stratogryph"),
+            B("Vinegaroon Executioner"),
+            B("Glyptodon"),
+            B("Molten Scorpion"),
+            B("Vapula"),
+            B("Aglaophotis"),
+            B("Earth Eater"),
+            B("Lord Ochu"),
+
             KC("4th Legion Nimrod"),
             KC("4th Legion Infantry"),
             KC("4th Legion Gunship"),
