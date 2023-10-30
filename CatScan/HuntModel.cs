@@ -73,7 +73,10 @@ public class ActiveFate
     // Fates may be started only after talking to an NPC, or have a brief intro sequence that plays out
     public bool Running = false;
 
+    public System.DateTime FirstSeenTimeUtc;
     public System.DateTime EndTimeUtc;
+
+    public System.TimeSpan FirstSeenAgo => HuntModel.UtcNow - FirstSeenTimeUtc;
     public System.TimeSpan TimeRemaining => Running ? (EndTimeUtc - HuntModel.UtcNow) : System.TimeSpan.Zero;
 }
 
@@ -118,6 +121,9 @@ static class HuntModel
 
     // Static information about the current zone
     public static HuntTerritory Territory = new();
+    public static System.DateTime LastZoneChangeUtc = UtcNow;
+
+    // --- Fields stored persistently in the zone cache
 
     // A list of hunt marks that have been detected in the current zone
     // XXX: Since these are keyed by the monster's name, only one SS minion can be recorded at a time
@@ -127,9 +133,19 @@ static class HuntModel
     // A list of kc monsters in the current zone, and their kill counts
     public static Dictionary<string, KillCount> KillCountLog => CurrentZoneCacheEntry.KillCountLog;
 
+    // --- Fields NOT stored in the zone cache
+
+    // TODO: Maybe save this data when changing zones
+    // In theory this information could be stored and then compared when re-entering
+    // As long as you return in under 5 minutes, its very likely that no fates begun
+    // and failed, at least in Southern Thanalan.
+
     // A list of active FATEs
-    // Not part of the cached zone data
     public static Dictionary<string, ActiveFate> ActiveFates = new();
+
+    // A list of active FATEs
+    public static System.DateTime LastFailedFateUtc = System.DateTime.MinValue;
+    public static string LastFailedFateName = string.Empty;
 
     // --- Page data in and out for per-zone persistence
 
@@ -143,9 +159,10 @@ static class HuntModel
         CurrentZoneCacheEntry = new();
     }
 
+    // Save the current zone data, and load data for the new zone
     public static void SwitchZone(int worldId, int zoneId, int instance)
     {
-        // Determine if there's any meaningful data stored for this zone, otherwise erase it from memory entirely when leaving the zone
+        // Determine if there's any meaningful data to save, otherwise erase it from memory entirely when leaving the zone
         // Ignore the case where we're switching to the zone we're already in
         if (Territory.IsValid() && (worldId != Territory.WorldId || zoneId != Territory.ZoneId || instance != Territory.Instance))
         {
