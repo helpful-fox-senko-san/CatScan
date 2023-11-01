@@ -148,14 +148,17 @@ public class GameScanner : IDisposable
     private int _zoneId = -1;
     private int _instance = -1;
     private bool _betweenAreas = false;
+    private bool _betweenZones = false;
     private bool _territoryChanged = false;
     private bool _scanningEnabled = false;
+
+    public bool BetweenAreas => _betweenAreas;
+    public bool BetweenZones => _betweenZones;
 
     // Expose some state for debugging
     internal int EnemyCacheSize => _enemyCache.Count;
     internal int FateCacheSize => _fateCache.Count;
     internal int LostIdsSize => _lostIds.Count;
-    internal bool BetweenAreas => _betweenAreas;
     internal bool TerritoryChanged => _territoryChanged;
     internal bool ScanningEnabled => _scanningEnabled;
     internal bool FrameworkUpdateRegistered => _frameworkUpdateRegistered;
@@ -413,10 +416,15 @@ public class GameScanner : IDisposable
             if (_territoryChanged && value)
                 value = false;
 
-            _betweenAreas = value;
+            _betweenZones = value;
 
-            if (!_betweenAreas)
+            if (!_betweenZones)
                 RegisterFrameworkUpdate();
+        }
+        else if (flag == ConditionFlag.BetweenAreas)
+        {
+            // Can't open the map while between areas, so track this too
+            _betweenAreas = value;
         }
     }
 
@@ -729,7 +737,7 @@ public class GameScanner : IDisposable
     {
         // No need to do anything while not logged in
         // If between areas, a territory change is probably about to happen -- don't scan to avoid mixing up zones
-        if (!DalamudService.ClientState.IsLoggedIn || (_betweenAreas && !_territoryChanged))
+        if (!DalamudService.ClientState.IsLoggedIn || (_betweenZones && !_territoryChanged))
         {
             ClearCache();
             UnregisterFrameworkUpdate();

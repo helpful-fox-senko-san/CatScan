@@ -18,6 +18,8 @@ public sealed class Plugin : IDalamudPlugin
     public static HuntScanner Scanner { get; set; } = null!;
     public static Notifications Notifications { get; set; } = null!;
 
+    public static bool BetweenAreas => _gameScanner.BetweenAreas;
+
     public Plugin(DalamudPluginInterface pluginInterface)
     {
         DalamudService.Initialize(pluginInterface);
