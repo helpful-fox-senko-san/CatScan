@@ -49,6 +49,9 @@ public class ScanResult
     public float HpPct;
     [JsonIgnore] public bool Missing = true;
 
+    // This lets us distinguish respawns
+    public uint ObjectId;
+
     public bool Dead => (HpPct == 0.0);
     public bool Pulled => (HpPct < 100.0);
 

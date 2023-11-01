@@ -140,23 +140,33 @@ public class HuntScanner
                     break;
                 }
 
+                bool isNew = false;
+
                 // There can be a new object ID picked up with the same name as an already logged mark
                 // This is either a respawn, a bug, or in the case of SS minions: expected
                 // FIXME: Can also happen if you have a saved scan list -- need to compare the Object IDs?
-                if (!HuntModel.ScanResults.TryGetValue(enemy.NameId, out var scanResult))
+                if (HuntModel.ScanResults.TryGetValue(enemy.NameId, out var scanResult))
+                {
+                    isNew = (scanResult.ObjectId != enemy.ObjectId);
+                }
+                else
                 {
                     HuntModel.ScanResults.Add(enemy.NameId, scanResult = new ScanResult(){
                         Rank = mark.Rank,
                         Name = enemy.Name,
-                        Missing = false
+                        Missing = false,
+                        ObjectId = enemy.ObjectId
                     });
+                    isNew = true;
                 }
 
                 UpdateScanResult(scanResult, enemy);
                 // Tell GameScanner to continue to poll for information about this enemy
                 enemy.Interesting = true;
                 // Ping as a new scan result -- even if it was a respawn
-                NewScanResult?.Invoke(scanResult);
+                // Compare Object IDs to avoid re-pinging after re-entering a zone, though
+                if (isNew)
+                    NewScanResult?.Invoke(scanResult);
 
                 break;
             }
