@@ -17,7 +17,7 @@ public partial class MainWindow : Window, IDisposable
         using var tabId = ImRaii.PushId("Debug");
 
         ImGui.Text($"GameScanner:");
-        if (_gameScanner.BetweenAreas)
+        if (_gameScanner.BetweenZones)
         {
             ImGui.SameLine();
             ImGui.Text("[BetweenAreas]");

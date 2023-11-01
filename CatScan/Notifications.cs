@@ -1,6 +1,7 @@
 using NAudio.Wave;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace CatScan;
 
@@ -40,6 +41,22 @@ public class Notifications
         var result = new CachedSample(ms.GetBuffer(), waveStream.WaveFormat);
         _cachedWavFiles.Add(filename, result);
         return result;
+    }
+
+    private void OpenMapLink(float mapX, float mapY)
+    {
+        // Map linking can fail if we detect something immediately after a teleport
+        // Retry for up to 5 seconds in the background
+        Task.Run(async () => {
+            for (int retries = 0; retries < 10; ++retries)
+            {
+                // Avoid spamming error text while we're teleporting
+                if (!Plugin.BetweenAreas && await GameFunctions.OpenMapLink(mapX, mapY))
+                    break;
+
+                await Task.Delay(500);
+            }
+        });
     }
 
     public Notifications(HuntScanner huntScanner)
@@ -92,13 +109,13 @@ public class Notifications
         if (Plugin.Configuration.AutoFlagEnabled)
         {
             if (Plugin.Configuration.AutoFlagS && rank == Rank.S)
-                GameFunctions.DoMapLink(mapX, mapY);
+                OpenMapLink(mapX, mapY);
             else if (Plugin.Configuration.AutoFlagA && rank == Rank.A)
-                GameFunctions.DoMapLink(mapX, mapY);
+                OpenMapLink(mapX, mapY);
             else if (Plugin.Configuration.AutoFlagB && rank == Rank.B)
-                GameFunctions.DoMapLink(mapX, mapY);
+                OpenMapLink(mapX, mapY);
             else if (Plugin.Configuration.AutoFlagFATE && rank == Rank.FATE)
-                GameFunctions.DoMapLink(mapX, mapY);
+                OpenMapLink(mapX, mapY);
         }
     }
 
