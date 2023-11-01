@@ -93,6 +93,10 @@ public class Notifications
         {
             if (Plugin.Configuration.AutoFlagS && rank == Rank.S)
                 GameFunctions.DoMapLink(mapX, mapY);
+            else if (Plugin.Configuration.AutoFlagA && rank == Rank.A)
+                GameFunctions.DoMapLink(mapX, mapY);
+            else if (Plugin.Configuration.AutoFlagB && rank == Rank.B)
+                GameFunctions.DoMapLink(mapX, mapY);
             else if (Plugin.Configuration.AutoFlagFATE && rank == Rank.FATE)
                 GameFunctions.DoMapLink(mapX, mapY);
         }

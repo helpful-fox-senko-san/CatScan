@@ -26,6 +26,8 @@ public class Configuration : IPluginConfiguration
     public bool AutoFlagEnabled { get; set; } = false;
     public bool AutoFlagFATE { get; set; } = false;
     public bool AutoFlagS { get; set; } = false;
+    public bool AutoFlagA { get; set; } = false;
+    public bool AutoFlagB { get; set; } = false;
 
     public bool AutoCloseEnabled { get; set; } = false;
 
