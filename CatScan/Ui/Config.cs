@@ -39,7 +39,7 @@ public partial class MainWindow : Window, IDisposable
             }
 
             b = Plugin.Configuration.SoundAlertFATE;
-            if (ImGui.Checkbox("FATE Boss", ref b))
+            if (ImGui.Checkbox("FATE", ref b))
             {
                 Plugin.Configuration.SoundAlertFATE = b;
                 Plugin.Configuration.Save();
@@ -91,7 +91,7 @@ public partial class MainWindow : Window, IDisposable
             using var disabled = ImRaii.Disabled(!Plugin.Configuration.AutoOpenEnabled);
 
             b = Plugin.Configuration.AutoOpenFATE;
-            if (ImGui.Checkbox("Epic FATE", ref b))
+            if (ImGui.Checkbox("FATE", ref b))
             {
                 Plugin.Configuration.AutoOpenFATE = b;
                 Plugin.Configuration.Save();
@@ -120,7 +120,7 @@ public partial class MainWindow : Window, IDisposable
             using var disabled = ImRaii.Disabled(!Plugin.Configuration.AutoFlagEnabled);
 
             b = Plugin.Configuration.AutoFlagFATE;
-            if (ImGui.Checkbox("Epic FATE", ref b))
+            if (ImGui.Checkbox("FATE", ref b))
             {
                 Plugin.Configuration.AutoFlagFATE = b;
                 Plugin.Configuration.Save();
@@ -128,9 +128,25 @@ public partial class MainWindow : Window, IDisposable
 
             ImGui.SameLine();
             b = Plugin.Configuration.AutoFlagS;
-            if (ImGui.Checkbox("S Rank", ref b))
+            if (ImGui.Checkbox("S", ref b))
             {
                 Plugin.Configuration.AutoFlagS = b;
+                Plugin.Configuration.Save();
+            }
+
+            ImGui.SameLine();
+            b = Plugin.Configuration.AutoFlagA;
+            if (ImGui.Checkbox("A", ref b))
+            {
+                Plugin.Configuration.AutoFlagA = b;
+                Plugin.Configuration.Save();
+            }
+
+            ImGui.SameLine();
+            b = Plugin.Configuration.AutoFlagB;
+            if (ImGui.Checkbox("B", ref b))
+            {
+                Plugin.Configuration.AutoFlagB = b;
                 Plugin.Configuration.Save();
             }
         }
