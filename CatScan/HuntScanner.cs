@@ -89,7 +89,7 @@ public class HuntScanner
         scanResult.RawZ = gameEnemy.Z;
         scanResult.MapX = ToMapOrd(gameEnemy.X, _zoneData.MapOffsetX, _zoneData.MapScale);
         scanResult.MapY = ToMapOrd(gameEnemy.Z, _zoneData.MapOffsetY, _zoneData.MapScale);
-
+        scanResult.Missing = false;
         scanResult.LastSeenTimeUtc = HuntModel.UtcNow;
 
         if (scanResult.HpPct != 0.0 && gameEnemy.HpPct == 0.0)
@@ -140,28 +140,23 @@ public class HuntScanner
                     break;
                 }
 
-                // New object ID with the same name as an already logged mark
+                // There can be a new object ID picked up with the same name as an already logged mark
                 // This is either a respawn, a bug, or in the case of SS minions: expected
-                // ... oops, this can also happen when entering a zone with a saved scan list
-                if (HuntModel.ScanResults.TryGetValue(enemy.NameId, out var scanResult))
-                {
-                    UpdateScanResult(scanResult, enemy);
-                    NewScanResult?.Invoke(scanResult);
-                    // This needs to be marked Interesting unconditionally
-                    enemy.Interesting = true;
-                }
-                else
+                // FIXME: Can also happen if you have a saved scan list -- need to compare the Object IDs?
+                if (!HuntModel.ScanResults.TryGetValue(enemy.NameId, out var scanResult))
                 {
                     HuntModel.ScanResults.Add(enemy.NameId, scanResult = new ScanResult(){
                         Rank = mark.Rank,
                         Name = enemy.Name,
                         Missing = false
                     });
-                    UpdateScanResult(scanResult, enemy);
-                    // Tell GameScanner to continue to poll for information about this enemy
-                    enemy.Interesting = true;
-                    NewScanResult?.Invoke(scanResult);
                 }
+
+                UpdateScanResult(scanResult, enemy);
+                // Tell GameScanner to continue to poll for information about this enemy
+                enemy.Interesting = true;
+                // Ping as a new scan result -- even if it was a respawn
+                NewScanResult?.Invoke(scanResult);
 
                 break;
             }
