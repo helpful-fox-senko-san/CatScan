@@ -493,7 +493,7 @@ public class GameScanner : IDisposable
                 dirty = true;
             }
 
-            if (double.Abs(hpPct - cachedEnemy.HpPct) >= 0.1)
+            if (float.Abs(hpPct - cachedEnemy.HpPct) >= 0.1f)
             {
                 cachedEnemy.HpPct = hpPct;
                 dirty = dirty || cachedEnemy.Interesting;
@@ -505,13 +505,13 @@ public class GameScanner : IDisposable
         {
             var pos = bnpc.Position;
 
-            if (double.Abs(pos.X - cachedEnemy.X) >= 1.0)
+            if (float.Abs(pos.X - cachedEnemy.X) >= 1.0f)
             {
                 cachedEnemy.X = pos.X;
                 dirty = true;
             }
 
-            if (double.Abs(pos.Z - cachedEnemy.Z) >= 1.0)
+            if (float.Abs(pos.Z - cachedEnemy.Z) >= 1.0f)
             {
                 cachedEnemy.Z = pos.Z;
                 dirty = true;
@@ -630,6 +630,8 @@ public class GameScanner : IDisposable
 
             if (_fateCache.TryGetValue(id, out var cachedFate))
             {
+                var dirty = false;
+
                 if (state == FateState.WaitingForEnd || state == FateState.Ended)
                 {
                     cachedFate.State = FateState.Ended;
@@ -653,14 +655,22 @@ public class GameScanner : IDisposable
 
                     cachedFate.State = state;
                     cachedFate.EndTimeUtc = System.DateTimeOffset.FromUnixTimeSeconds(startTime + duration).UtcDateTime;
+                    dirty = true;
                 }
 
                 if (state != FateState.Preparation)
                 {
-                    // TODO: dont update unless something changes
-                    cachedFate.ProgressPct = (float)fate.Progress;
-                    EmitFate(cachedFate);
+                    var pct = (float)fate.Progress;
+
+                    if (float.Abs(cachedFate.ProgressPct - pct) >= 0.1f)
+                    {
+                        cachedFate.ProgressPct = pct;
+                        dirty = true;
+                    }
                 }
+
+                if (dirty)
+                    EmitFate(cachedFate);
             }
             else
             {
