@@ -59,6 +59,36 @@ public partial class MainWindow : Window, IDisposable
 
         ImGui.Separator();
 
+        {
+            using var table = ImRaii.Table("ScannerStatsTable", 2);
+            ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("rate", ImGuiTableColumnFlags.WidthFixed);
+
+            var doRow = (string name, int? total, int? sec) => {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(name);
+                ImGui.TableNextColumn();
+                if (total == null)
+                    ImGui.TextUnformatted($"{sec}/sec");
+                else
+                    ImGui.TextUnformatted($"{total}");
+            };
+
+            var a = _gameScanner.Stats;
+            var b = _gameScanner.Stats1Sec;
+
+            doRow("ScanTicks", null, b.ScanTicks);
+            // Just equal to ScanTicks currently
+            //doRow("ScanFateTicks", null, b.ScanFateTicks);
+            doRow("ObjectTableRows", null, b.ObjectTableRows);
+            doRow("FateTableRows", null, b.FateTableRows);
+            doRow("GameStringReads", a.GameStringReads, null);
+            doRow("EmittedEvents", null, b.EmittedEvents);
+        }
+
+        ImGui.Separator();
+
         if (ImGui.Checkbox($"Display EnemyCache ({_gameScanner.EnemyCacheSize}, LostIds:{_gameScanner.LostIdsSize})", ref _displayEnemyCache) || _displayEnemyCache)
         {
             using var table = ImRaii.Table("EnemyCacheTable", 3);
