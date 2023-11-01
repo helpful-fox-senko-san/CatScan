@@ -163,6 +163,34 @@ public class GameScanner : IDisposable
     internal Dictionary<uint, GameFate> FateCache => _fateCache;
     internal HashSet<uint> LostIds => _lostIds;
 
+    internal record struct ScannerStats
+    {
+        internal int ScanTicks;
+        internal int ScanFateTicks;
+        internal int ObjectTableRows;
+        internal int FateTableRows;
+        internal int GameStringReads;
+        internal int EmittedEvents;
+
+        internal static ScannerStats Subtract(ScannerStats a, ScannerStats b)
+        {
+            return new(){
+                ScanTicks = a.ScanTicks - b.ScanTicks,
+                ScanFateTicks = a.ScanFateTicks - b.ScanFateTicks,
+                ObjectTableRows = a.ObjectTableRows - b.ObjectTableRows,
+                FateTableRows = a.FateTableRows - b.FateTableRows,
+                GameStringReads = a.GameStringReads - b.GameStringReads,
+                EmittedEvents = a.EmittedEvents - b.EmittedEvents,
+            };
+        }
+    }
+
+    private ScannerStats _stats;
+    private ScannerStats _stats1sec;
+    private ScannerStats _statsPrev;
+    internal ScannerStats Stats => _stats;
+    internal ScannerStats Stats1Sec => _stats1sec;
+
     private bool _emitTaskActive = false;
     private TaskCompletionSource _emitTaskPokeSource = new();
 
@@ -212,31 +240,37 @@ public class GameScanner : IDisposable
 
     private void EmitNewEnemy(GameEnemy enemy)
     {
+        ++_stats.EmittedEvents;
         _emitQueue.Enqueue(() => { NewEnemy?.Invoke(enemy); });
     }
 
     private void EmitLostEnemy(GameEnemy enemy)
     {
+        ++_stats.EmittedEvents;
         _emitQueue.Enqueue(() => { LostEnemy?.Invoke(enemy); });
     }
 
     private void EmitUpdatedEnemy(GameEnemy enemy)
     {
+        ++_stats.EmittedEvents;
         _emitQueue.Enqueue(() => { UpdatedEnemy?.Invoke(enemy); });
     }
 
     private void EmitFate(GameFate fate)
     {
+        ++_stats.EmittedEvents;
         _emitQueue.Enqueue(() => { NewOrUpdatedFate?.Invoke(fate); });
     }
 
     private void EmitLostFate(GameFate fate)
     {
+        ++_stats.EmittedEvents;
         _emitQueue.Enqueue(() => { LostFate?.Invoke(fate); });
     }
 
     private void EmitZoneChange(GameZoneInfo zoneInfo)
     {
+        ++_stats.EmittedEvents;
         // Zone changes are critical and infrequent, just emit them directly
         _emitQueue.Clear();
         Task.Run(() => { ZoneChange?.Invoke(zoneInfo); });
@@ -252,6 +286,17 @@ public class GameScanner : IDisposable
 
         // Trigger an initial update based on the current territory
         _territoryChanged = true;
+
+        Task.Run(async () => {
+            var isDisposed = () => _disposalCts.Token.IsCancellationRequested;
+
+            while (!isDisposed())
+            {
+                _stats1sec = ScannerStats.Subtract(_stats, _statsPrev);
+                _statsPrev = _stats;
+                await Task.Delay(1000);
+            }
+        }, _disposalCts.Token);
     }
 
     // This should be called in response to a ZoneChange event to enable object scanning
@@ -312,6 +357,7 @@ public class GameScanner : IDisposable
 
         _worldId = (int)localPlayer.CurrentWorld.Id;
         _worldName = gameData.Name.ToString();
+        ++_stats.GameStringReads;
     }
 
     // Clear the current zone's information and cached enemy data
@@ -394,6 +440,7 @@ public class GameScanner : IDisposable
             Z = pos.Z,
             HpPct = hpPct
         };
+        ++_stats.GameStringReads;
 
         _enemyCache.Add(id, newEnemy);
 
@@ -480,6 +527,7 @@ public class GameScanner : IDisposable
     // Called in Framework thread while zone ID is complete and scanning is enabled
     private void ScanTick()
     {
+        ++_stats.ScanTicks;
         int tableLen = DalamudService.ObjectTable.Length;
         int n = 20;
 
@@ -507,6 +555,7 @@ public class GameScanner : IDisposable
                 _nextIdx = 0;
         };
 
+        _stats.ObjectTableRows += n;
         for (; i < n; next())
         {
             var idx = _nextIdx;
@@ -572,6 +621,8 @@ public class GameScanner : IDisposable
     // Called in Framework thread while zone ID is complete and scanning is enabled
     private void ScanFateTick()
     {
+        ++_stats.ScanFateTicks;
+        _stats.FateTableRows += DalamudService.FateTable.Length;
         foreach (var fate in DalamudService.FateTable)
         {
             var id = fate.FateId;
@@ -639,10 +690,10 @@ public class GameScanner : IDisposable
                     EndTimeUtc = state == FateState.Preparation ? null : System.DateTimeOffset.FromUnixTimeSeconds(startTime + duration).UtcDateTime,
                     State = state
                 };
+                ++_stats.GameStringReads;
 
                 _fateCache.Add(id, cachedFate);
                 EmitFate(cachedFate);
-                bool valid = fate.IsValid();
             }
         }
 
