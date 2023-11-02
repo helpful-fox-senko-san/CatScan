@@ -78,13 +78,13 @@ public partial class MainWindow : Window, IDisposable
             var a = _gameScanner.Stats;
             var b = _gameScanner.Stats1Sec;
 
-            doRow("ScanTicks", null, b.ScanTicks);
+            //doRow("ScanTicks", null, b.ScanTicks);
             // Just equal to ScanTicks currently
-            doRow("ScanFateTicks", null, b.ScanFateTicks);
+            //doRow("ScanFateTicks", null, b.ScanFateTicks);
             doRow("ObjectTableRows", null, b.ObjectTableRows);
             doRow("FateTableRows", null, b.FateTableRows);
             doRow("EmittedEvents", null, b.EmittedEvents);
-            doRow("GameStringReads", a.GameStringReads, null);
+            //doRow("GameStringReads", a.GameStringReads, null);
         }
 
         ImGui.Separator();
