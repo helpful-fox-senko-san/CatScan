@@ -1,4 +1,5 @@
 using Dalamud.Interface.Windowing;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using System;
@@ -7,6 +8,8 @@ namespace CatScan.Ui;
 
 public partial class MainWindow : Window, IDisposable
 {
+    private string? _assemblyVersion = null;
+
     private void DrawConfig()
     {
         using var tabId = ImRaii.PushId("Config");
@@ -184,5 +187,13 @@ public partial class MainWindow : Window, IDisposable
         }
 
         ImGui.TextWrapped("Displays Debug tab and opens plugin window on start-up.");
+
+        ImGui.Separator();
+
+        if (_assemblyVersion == null)
+            _assemblyVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!.ToString();
+
+        using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorGone);
+        ImGuiHelpers.CenteredText($"Version {_assemblyVersion}");
     }
 }
