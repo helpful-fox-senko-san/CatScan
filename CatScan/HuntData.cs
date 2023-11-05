@@ -55,9 +55,6 @@ public readonly struct Zone
 
 public static class HuntData
 {
-    private static int Uninstanced => 0;
-    private static int Instanced(int n) => n;
-
     // -- Shorthand for creating Mark instances of a given rank
     private static Mark B(string name) { return new Mark(Rank.B, name); }
     private static Mark A(string name) { return new Mark(Rank.A, name); }
@@ -114,11 +111,11 @@ public static class HuntData
     }
 
     // -- Shorthand overloads for uninstanced maps
-    private static Zone ARR_Zone(string name, params Mark[] marks) { return ARR_Zone(name, Uninstanced, marks); }
-    private static Zone HW_Zone(string name, params Mark[] marks) { return HW_Zone(name, Uninstanced, marks); }
-    private static Zone SB_Zone(string name, params Mark[] marks) { return SB_Zone(name, Uninstanced, marks); }
-    private static Zone ShB_Zone(string name, params Mark[] marks) { return ShB_Zone(name, Uninstanced, marks); }
-    private static Zone EW_Zone(string name, params Mark[] marks) { return EW_Zone(name, Uninstanced, marks); }
+    private static Zone ARR_Zone(string name, params Mark[] marks) { return ARR_Zone(name, 1, marks); }
+    private static Zone HW_Zone(string name, params Mark[] marks) { return HW_Zone(name, 1, marks); }
+    private static Zone SB_Zone(string name, params Mark[] marks) { return SB_Zone(name, 1, marks); }
+    private static Zone ShB_Zone(string name, params Mark[] marks) { return ShB_Zone(name, 1, marks); }
+    private static Zone EW_Zone(string name, params Mark[] marks) { return EW_Zone(name, 1, marks); }
 
     public readonly static Dictionary<int, Zone> Zones = new Dictionary<int, Zone>{
 
@@ -250,7 +247,7 @@ public static class HuntData
         {956, EW_Zone("Labrynthos",
             B("Ü-u-ü-u"), B("Green Archon"), A("Hulder"), A("Storsie"), S("Burfurlur the Canny")
         )},
-        {957, EW_Zone("Thavnair", Instanced(3),
+        {957, EW_Zone("Thavnair", 3,
             B("Iravati"), B("Vajrakumara"), A("Yilan"), A("Sugriva"), S("Sphatika"), FATE("Daivadipa"),
             KC("Vajralangula"), KC("Pisaca"), KC("Asvattha")
         )},

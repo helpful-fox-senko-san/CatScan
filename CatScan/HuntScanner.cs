@@ -145,13 +145,15 @@ public class HuntScanner
                 // There can be a new object ID picked up with the same name as an already logged mark
                 // This is either a respawn, a bug, or in the case of SS minions: expected
                 // FIXME: Can also happen if you have a saved scan list -- need to compare the Object IDs?
-                if (HuntModel.ScanResults.TryGetValue(enemy.NameId, out var scanResult))
+                if (HuntModel.ScanResults.TryGetValue(enemy.EnglishName, out var scanResult))
                 {
-                    isNew = (scanResult.ObjectId != enemy.ObjectId);
+                    // XXX: An object ID of 0 comes from importing hunt train data
+                    //      Avoid pinging when coming in to range of them
+                    isNew = (scanResult.ObjectId != enemy.ObjectId) && (scanResult.ObjectId != 0);
                 }
                 else
                 {
-                    HuntModel.ScanResults.Add(enemy.NameId, scanResult = new ScanResult(){
+                    HuntModel.ScanResults.Add(enemy.EnglishName, scanResult = new ScanResult(){
                         Rank = mark.Rank,
                         Name = enemy.Name,
                         Missing = false,
@@ -185,7 +187,7 @@ public class HuntScanner
             }
         }
 
-        if (HuntModel.ScanResults.TryGetValue(enemy.NameId, out var scanResult))
+        if (HuntModel.ScanResults.TryGetValue(enemy.EnglishName, out var scanResult))
             scanResult.Missing = true;
     }
 
@@ -243,7 +245,7 @@ public class HuntScanner
             }
         }
 
-        if (HuntModel.ScanResults.TryGetValue(enemy.NameId, out var scanResult))
+        if (HuntModel.ScanResults.TryGetValue(enemy.EnglishName, out var scanResult))
         {
             // If the enemy was missing, it needs to be be re-marked as Interesting to the GameScanner
             if (scanResult.Missing)

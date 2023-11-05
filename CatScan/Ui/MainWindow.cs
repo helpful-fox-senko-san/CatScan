@@ -13,6 +13,7 @@ public partial class MainWindow : Window, IDisposable
     public enum Tabs
     {
         ScanResults,
+        TrainLog,
         Fates,
         KillCount,
         Config,
@@ -46,6 +47,7 @@ public partial class MainWindow : Window, IDisposable
         _resourcePath = Path.Combine(DalamudService.PluginInterface.AssemblyLocation.Directory?.FullName!, "Resources");
 
         InitScanResults();
+        InitTrainLog();
     }
 
     public void Dispose()
@@ -94,6 +96,7 @@ public partial class MainWindow : Window, IDisposable
 
         using var tabs = ImRaii.TabBar("MainWindowTabs");
         doTab("Scan Results", Tabs.ScanResults, DrawScanResults);
+        doTab("Train Log", Tabs.TrainLog, DrawTrainLog);
         doTab("Fates", Tabs.Fates, DrawFates);
         doTab("Kill Count", Tabs.KillCount, DrawKillCounts);
         doTab("Config", Tabs.Config, DrawConfig);
