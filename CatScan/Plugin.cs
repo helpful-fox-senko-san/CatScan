@@ -13,6 +13,7 @@ public sealed class Plugin : IDalamudPlugin
     public static WindowSystem WindowSystem = new("CatScan");
 
     public static MainWindow MainWindow { get; private set; } = null!;
+    public static ConfigWindow ConfigWindow { get; private set; } = null!;
 
     private static GameScanner _gameScanner { get; set; } = null!;
     public static HuntScanner Scanner { get; set; } = null!;
@@ -32,7 +33,9 @@ public sealed class Plugin : IDalamudPlugin
         Notifications = new Notifications(Scanner);
 
         MainWindow = new MainWindow(_gameScanner);
+        ConfigWindow = new ConfigWindow(_gameScanner);
         WindowSystem.AddWindow(Plugin.MainWindow);
+        WindowSystem.AddWindow(Plugin.ConfigWindow);
 
         DalamudService.CommandManager.AddHandler(HuntCommandName, new CommandInfo(OnHuntCommand)
         {
@@ -43,7 +46,9 @@ public sealed class Plugin : IDalamudPlugin
         DalamudService.PluginInterface.UiBuilder.OpenMainUi += OpenMainUi;
         DalamudService.PluginInterface.UiBuilder.OpenConfigUi += OpenConfigUi;
 
-        if (Plugin.Configuration.DebugEnabled)
+        string ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!.ToString();
+
+        if (DalamudService.PluginInterface.Reason == PluginLoadReason.Reload)
             MainWindow.IsOpen = true;
     }
 
@@ -60,6 +65,7 @@ public sealed class Plugin : IDalamudPlugin
         WindowSystem.RemoveAllWindows();
 
         MainWindow.Dispose();
+        ConfigWindow.Dispose();
     }
 
     private static void Draw()
@@ -74,7 +80,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public static void OpenConfigUi()
     {
-        MainWindow.OpenTab(MainWindow.Tabs.Config);
+        ConfigWindow.OpenTab(ConfigWindow.Tabs.Config);
     }
 
     private static void OnHuntCommand(string command, string args)
