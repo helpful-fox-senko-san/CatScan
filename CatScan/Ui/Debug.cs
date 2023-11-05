@@ -28,16 +28,14 @@ public partial class ConfigWindow : Window, IDisposable
             ImGui.Text("[TerritoryChanged]");
         }
         ImGui.Text($"  - ScanningEnabled: {_gameScanner.ScanningEnabled}");
-        ImGui.Text($"  - FrameworkUpdateRegistered: {_gameScanner.FrameworkUpdateRegistered}");
+        //ImGui.Text($"  - FrameworkUpdateRegistered: {_gameScanner.FrameworkUpdateRegistered}");
         if (!_gameScanner.ScanningEnabled || !_gameScanner.FrameworkUpdateRegistered)
         {
             if (ImGui.Button("Force Enable Scanner"))
                 _gameScanner.EnableScanning();
         }
-        //ImGui.Text($"  - EnemyCache:{_gameScanner.EnemyCacheSize}, Lost:{_gameScanner.LostIdsSize}, FateCache:{_gameScanner.FateCacheSize}");
-        //ImGui.Text($"  - BNpcNameCache:{GameData.BNpcNameCacheSize}, FateNameCache:{GameData.FateNameCacheSize}");
 
-        ImGui.Text("");
+        ImGui.Separator();
         ImGui.Text($"World {HuntModel.Territory.WorldId}, Zone {HuntModel.Territory.ZoneId}, Instance {HuntModel.Territory.Instance}");
 
         if (HuntModel.Territory.ZoneId > 0)
