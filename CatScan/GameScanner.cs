@@ -367,11 +367,10 @@ public class GameScanner : IDisposable
     // Can be called from Framework thread OR from UI
     public void ClearCache()
     {
+        if (_worldId == -1)
+            return;
+
         DalamudService.Framework.RunOnFrameworkThread(() => {
-            _territoryChanged = true;
-            _worldId = -1;
-            _zoneId = -1;
-            _instance = -1;
             _enemyCache.Clear();
             _fateCache.Clear();
             _lostIds.Clear();
@@ -739,6 +738,10 @@ public class GameScanner : IDisposable
         // If between areas, a territory change is probably about to happen -- don't scan to avoid mixing up zones
         if (!DalamudService.ClientState.IsLoggedIn || (_betweenZones && !_territoryChanged))
         {
+            _territoryChanged = true;
+            _worldId = -1;
+            _zoneId = -1;
+            _instance = -1;
             ClearCache();
             UnregisterFrameworkUpdate();
             return;
@@ -747,6 +750,10 @@ public class GameScanner : IDisposable
         // Clear the enemy list and emit a zone change event
         if (_territoryChanged || _worldId < 0 || _zoneId < 0 || _instance < 0)
         {
+            // Avoid flickering back and forth between states
+            if (_betweenZones)
+                return;
+
             ClearCache();
 
             if (_territoryChanged || _zoneId < 0)
@@ -807,10 +814,13 @@ public class GameScanner : IDisposable
 
     private void UnregisterFrameworkUpdate()
     {
+        // Disabled due to rare bug
+        /*
         if (!_frameworkUpdateRegistered)
             return;
         DalamudService.Framework.Update -= OnFrameworkUpdate;
         _frameworkUpdateRegistered = false;
+        */
     }
 
     private void RegisterFrameworkUpdate()
