@@ -6,7 +6,7 @@ using System;
 
 namespace CatScan.Ui;
 
-public partial class MainWindow : Window, IDisposable
+public partial class ConfigWindow : Window, IDisposable
 {
     private string? _assemblyVersion = null;
 
@@ -176,17 +176,6 @@ public partial class MainWindow : Window, IDisposable
         }
 
         ImGui.TextWrapped("Keeps track of mobs that are no longer visible to you. Use to estimate a possible kill count range when you are not killing alone.");
-
-        ImGui.Separator();
-
-        b = Plugin.Configuration.DebugEnabled;
-        if (ImGui.Checkbox("Debug Enabled", ref b))
-        {
-            Plugin.Configuration.DebugEnabled = b;
-            Plugin.Configuration.Save();
-        }
-
-        ImGui.TextWrapped("Displays Debug tab and opens plugin window on start-up.");
 
         ImGui.Separator();
 

@@ -8,7 +8,7 @@ public class Configuration : IPluginConfiguration
 {
     public int Version { get; set; } = 0;
 
-    public bool DebugEnabled { get; set; } = false;
+    [Obsolete] public bool DebugEnabled { get; set; } = false;
 
     public bool SoundEnabled { get; set; } = true;
     public float SoundVolume { get; set; } = 0.6f;

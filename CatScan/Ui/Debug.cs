@@ -5,7 +5,7 @@ using System;
 
 namespace CatScan.Ui;
 
-public partial class MainWindow : Window, IDisposable
+public partial class ConfigWindow : Window, IDisposable
 {
     private bool _displayEnemyCache = false;
     private bool _displayFateCache = false;

@@ -1,4 +1,5 @@
-﻿using Dalamud.Interface.Windowing;
+﻿using Dalamud.Interface;
+using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
@@ -15,9 +16,7 @@ public partial class MainWindow : Window, IDisposable
         ScanResults,
         TrainLog,
         Fates,
-        KillCount,
-        Config,
-        Debug
+        KillCount
     }
 
     // for debugging
@@ -76,11 +75,18 @@ public partial class MainWindow : Window, IDisposable
 
         // There is some excess space at the top of the window
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 2.0f);
-        // I think the blurry scaled text is charming but idk
-        //ImGui.SetWindowFontScale(1.2f);
         ImGuiHelpers.CenteredText($"{zoneName}{instanceText}");
-        //ImGui.SetWindowFontScale(1.0f);
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2.0f);
+
+        ImGui.SameLine();
+        {
+            using var pushFont = ImRaii.PushFont(UiBuilder.IconFont);
+            ImGui.SetCursorPosX(ImGui.GetWindowWidth() - 30.0f);
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 4.0f);
+            using var pushStyle = ImRaii.PushColor(ImGuiCol.Button, 0);
+            if (ImGui.Button(Dalamud.Interface.FontAwesomeIcon.Cog.ToIconString()))
+                Plugin.OpenConfigUi();
+        }
 
         var doTab = (string name, Tabs tabId, Action drawfn) => {
             bool forceOpenFlag = (_forceOpenTab == tabId);
@@ -99,9 +105,6 @@ public partial class MainWindow : Window, IDisposable
         doTab("Train Log", Tabs.TrainLog, DrawTrainLog);
         doTab("Fates", Tabs.Fates, DrawFates);
         doTab("Kill Count", Tabs.KillCount, DrawKillCounts);
-        doTab("Config", Tabs.Config, DrawConfig);
-        if (Plugin.Configuration.DebugEnabled)
-            doTab("Debug", Tabs.Config, DrawDebug);
     }
 
     public override void Draw()
