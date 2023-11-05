@@ -116,7 +116,7 @@ public readonly struct ZoneCacheKey
 
 public class ZoneCacheEntry
 {
-    public Dictionary<uint, ScanResult> ScanResults = new();
+    public Dictionary<string, ScanResult> ScanResults = new();
     public List<KillCount> KillCountLog = new();
 }
 
@@ -132,7 +132,7 @@ static class HuntModel
 
     // A list of hunt marks that have been detected in the current zone
     // XXX: Since these are keyed by the monster's name, only one SS minion can be recorded at a time
-    public static Dictionary<uint, ScanResult> ScanResults => CurrentZoneCacheEntry.ScanResults;
+    public static Dictionary<string, ScanResult> ScanResults => CurrentZoneCacheEntry.ScanResults;
 
     // A list of kc monsters in the current zone, and their kill counts
     public static List<KillCount> KillCountLog => CurrentZoneCacheEntry.KillCountLog;
