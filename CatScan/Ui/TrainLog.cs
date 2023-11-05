@@ -62,7 +62,7 @@ public partial class MainWindow : Window, IDisposable
         // Index all of the A ranks for each expansion
         // A row is added for each instanced version of a mark
         // TODO: Manually list the zones in a more familiar order
-        var addTrain = (Expansion ex, string name) => {
+        var addTrain = (Expansion ex, string name, int[] exZoneIds) => {
             var train = new TrainLogExpansion(){
                 Expansion = ex,
                 Name = name,
@@ -71,7 +71,7 @@ public partial class MainWindow : Window, IDisposable
 
             _trainLogExpansions.Add(train);
 
-            foreach (var zoneId in getExpansionZoneIds(ex))
+            foreach (var zoneId in exZoneIds)
             {
                 var zone = HuntData.Zones[zoneId];
 
@@ -92,11 +92,11 @@ public partial class MainWindow : Window, IDisposable
             }
         };
 
-        addTrain(Expansion.ARR, "A Realm Reborn");
-        addTrain(Expansion.HW, "Heavensward");
-        addTrain(Expansion.SB, "Stormblood");
-        addTrain(Expansion.ShB, "Shadowbringers");
-        addTrain(Expansion.EW, "Endwalker");
+        addTrain(Expansion.ARR, "A Realm Reborn", HuntData.ZoneOrderARR);
+        addTrain(Expansion.HW, "Heavensward", HuntData.ZoneOrderHW);
+        addTrain(Expansion.SB, "Stormblood", HuntData.ZoneOrderSB);
+        addTrain(Expansion.ShB, "Shadowbringers", HuntData.ZoneOrderShB);
+        addTrain(Expansion.EW, "Endwalker", HuntData.ZoneOrderEW);
 
         _selectedTrainIndex = _trainLogExpansions.Count - 1;
         _selectedTrain = _trainLogExpansions[_selectedTrainIndex];

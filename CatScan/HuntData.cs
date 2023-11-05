@@ -422,4 +422,30 @@ public static class HuntData
         "Hypertuned Havoc",
         "Attack of the Supersoldiers"
     };
+
+    // Zone orders for hunt trains, based on Teleport order
+
+    public readonly static int[] ZoneOrderARR = new int[]{
+        134, 135, 137, 138, 139, 180, // La Noscea
+        148, 152, 153, 154, // Black Shroud
+        140, 141, 145, 146, 147, // Thanalan
+        155, // Coerthas
+        156 // Mor Dhona
+    };
+
+    public readonly static int[] ZoneOrderHW = new int[]{
+        397, 401, 402, 399, 398, 400
+    };
+
+    public readonly static int[] ZoneOrderSB = new int[]{
+        612, 620, 621, 613, 614, 622
+    };
+
+    public readonly static int[] ZoneOrderShB = new int[]{
+        813, 814, 815, 816, 817, 818
+    };
+
+    public readonly static int[] ZoneOrderEW = new int[]{
+        957, 958, 956, 959, 961, 960
+    };
 }
