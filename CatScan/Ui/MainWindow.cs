@@ -63,15 +63,23 @@ public partial class MainWindow : Window, IDisposable
         _forceOpenTab = tab;
     }
 
+    private string _cachedZoneName = string.Empty;
+    private int _cachedZoneNameId = -1;
+
     public void DrawMainWindow()
     {
         string instanceText = "";
         if (HuntModel.Territory.Instance > 0)
             instanceText = " i" + HuntModel.Territory.Instance;
-        // FIXME: There should not be a null dereference here...
-        string zoneName = HuntModel.Territory.ZoneData.Name ?? string.Empty;
-        if (zoneName.Length == 0 || (zoneName.Length > 0 && zoneName.Substring(0, 1) == "#"))
-            zoneName = GameData.GetZoneData(HuntModel.Territory.ZoneId).Name;
+
+        int zoneId = HuntModel.Territory.ZoneId;
+        string zoneName = (zoneId == _cachedZoneNameId) ? _cachedZoneName : string.Empty;
+
+        if (zoneName.Length == 0)
+        {
+            zoneName = _cachedZoneName = GameData.GetZoneData(zoneId).Name;
+            _cachedZoneNameId = zoneId;
+        }
 
         // There is some excess space at the top of the window
         ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 2.0f);
