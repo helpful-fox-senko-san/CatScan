@@ -15,11 +15,26 @@ public partial class MainWindow : Window, IDisposable
     private IDalamudTextureWrap? _iconGreen;
     private IDalamudTextureWrap? _iconRed;
 
-    private struct TrainLogMark
+    private class TrainLogMark
     {
         public int ZoneId;
-        public string Name;
+        public string Name => GetLocalName();
+        public string EnglishName = string.Empty;
         public int Instance;
+
+        private string _cachedLocalName = string.Empty;
+
+        private string GetLocalName()
+        {
+            if (_cachedLocalName.Length > 0)
+                return _cachedLocalName;
+
+            if (!GameData.NameDataReady)
+                return EnglishName;
+
+            _cachedLocalName = GameData.TranslateBNpcName(EnglishName);
+            return _cachedLocalName;
+        }
     }
 
     private struct TrainLogExpansion
@@ -30,8 +45,8 @@ public partial class MainWindow : Window, IDisposable
     }
 
     private List<TrainLogExpansion> _trainLogExpansions = new();
-    TrainLogExpansion _selectedTrain;
-    int _selectedTrainIndex;
+    private TrainLogExpansion _selectedTrain;
+    private int _selectedTrainIndex;
 
     private void InitTrainLog()
     {
@@ -83,7 +98,7 @@ public partial class MainWindow : Window, IDisposable
                         {
                             train.Marks.Add(new(){
                                 ZoneId = zoneId,
-                                Name = mark.Name,
+                                EnglishName = mark.Name,
                                 Instance = i
                             });
                         }
@@ -125,7 +140,7 @@ public partial class MainWindow : Window, IDisposable
 
             if (scanResult != null && !dead)
             {
-                text += $"{mark.Name} \uE0BB{zone.Name} ( {scanResult.MapX:F1}  , {scanResult.MapY:F1} )";
+                text += $"{mark.EnglishName} \uE0BB{zone.Name} ( {scanResult.MapX:F1}  , {scanResult.MapY:F1} )";
 
                 if (zone.Instances > 1)
                     text += $" i{mark.Instance}";
@@ -139,6 +154,9 @@ public partial class MainWindow : Window, IDisposable
 
     private void PasteTrainLog()
     {
+        if (!GameData.NameDataReady)
+            return;
+
         var text = ImGui.GetClipboardText().Trim('\n');
         var lines = text.Split('\n');
 
@@ -150,7 +168,8 @@ public partial class MainWindow : Window, IDisposable
             if (parts.Length == 1)
                 continue;
 
-            var mobName = parts[0];
+            var mobNameEn = parts[0];
+            var mobName = GameData.TranslateBNpcName(parts[0]);
             var location = parts[1].TrimStart('\uE0BB');
 
             int p1 = location.IndexOf('(');
@@ -178,9 +197,9 @@ public partial class MainWindow : Window, IDisposable
 
                     bool found = false;
 
-                    foreach (var scanResult in model.ScanResults.Values)
+                    foreach (var scanResult in model.ScanResults)
                     {
-                        if (scanResult.Name == mobName)
+                        if (scanResult.Key == mobNameEn)
                         {
                             found = true;
                             break;
@@ -189,7 +208,7 @@ public partial class MainWindow : Window, IDisposable
 
                     if (!found)
                     {
-                        model.ScanResults.Add(mobName, new ScanResult(){
+                        model.ScanResults.Add(mobNameEn, new ScanResult(){
                             Rank = Rank.A,
                             Name = mobName,
                             // Could calculate raw coords but we don't use them anyway
@@ -202,9 +221,11 @@ public partial class MainWindow : Window, IDisposable
                             ObjectId = 0,
                             LastSeenTimeUtc = HuntModel.UtcNow,
                             KillTimeUtc = System.DateTime.MinValue,
-                            Missing = false
+                            Missing = true
                         });
                     }
+
+                    // TODO: Should overwrite the position if it was found?
 
                     break;
                 }
@@ -249,12 +270,12 @@ public partial class MainWindow : Window, IDisposable
 
         ImGui.Columns(2);
 
-        int i = 0;
+        int rowNum = 0;
         int midPoint = (_selectedTrain.Marks.Count + 1) / 2;
 
         foreach (var mark in _selectedTrain.Marks)
         {
-            if (i++ == midPoint)
+            if (rowNum++ == midPoint)
                 ImGui.NextColumn();
 
             var zone = HuntData.Zones[mark.ZoneId];
@@ -306,7 +327,7 @@ public partial class MainWindow : Window, IDisposable
             // Subtle visual separation between zones
             if (_selectedTrain.Expansion != Expansion.ARR)
             {
-                if (i % 2 == 0)
+                if (rowNum % 2 == 0)
                     ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2.0f);
             }
         }

@@ -86,9 +86,24 @@ public class ActiveFate
 
 public class KillCount
 {
-    public string Name = string.Empty;
+    public string Name => GetLocalName();
+    public string EnglishName = string.Empty;
     public int Killed;
     public int Missing;
+
+    private string _cachedLocalName = string.Empty;
+
+    private string GetLocalName()
+    {
+        if (_cachedLocalName.Length > 0)
+            return _cachedLocalName;
+
+        if (!GameData.NameDataReady)
+            return EnglishName;
+
+        _cachedLocalName = GameData.TranslateBNpcName(EnglishName);
+        return _cachedLocalName;
+    }
 }
 
 public readonly struct ZoneCacheKey
@@ -221,11 +236,7 @@ static class HuntModel
             foreach (var mark in HuntModel.Territory.ZoneData.Marks)
             {
                 if (mark.Rank == Rank.KC)
-                {
-                    // Have to go through a whole ton of work to try get a localized name...
-                    var name = GameData.TranslateBNpcName(mark.Name);
-                    CurrentZoneCacheEntry.KillCountLog.Add(new(){ Name = name });
-                }
+                    CurrentZoneCacheEntry.KillCountLog.Add(new(){ EnglishName = mark.Name });
             }
         }
     }

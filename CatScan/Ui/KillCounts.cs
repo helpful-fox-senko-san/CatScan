@@ -43,7 +43,7 @@ public partial class MainWindow : Window, IDisposable
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
-            ImGui.Text($"{r.Name}");
+            ImGui.TextUnformatted($"{r.Name}");
             ImGui.TableNextColumn();
             ImGui.AlignTextToFramePadding();
             using (ImRaii.PushColor(ImGuiCol.Text, _textColorKc))
