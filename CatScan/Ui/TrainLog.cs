@@ -145,11 +145,11 @@ public partial class MainWindow : Window, IDisposable
                 if (zone.Instances > 1)
                     text += $" i{mark.Instance}";
 
-                text += '\n';
+                text += "\r\n";
             }
         }
 
-        ImGui.SetClipboardText(text.TrimEnd('\n'));
+        ImGui.SetClipboardText(text.TrimEnd('\r', '\n'));
     }
 
     private void PasteTrainLog()
@@ -186,8 +186,22 @@ public partial class MainWindow : Window, IDisposable
             string instanceStr = location.Substring(p2+1).Trim();
             int instance = 1;
 
-            if (instanceStr.Length > 1 && instanceStr.StartsWith('i'))
-                instance = int.Parse(instanceStr.Substring(1));
+            for (int i = 1; i <= 9; ++i)
+            {
+                if (zoneName.EndsWith((char)(0xE0B0 + i)))
+                {
+                    instance = i;
+                    zoneName = zoneName.Remove(zoneName.Length - 1);
+                    break;
+                }
+            }
+
+            if (instanceStr.Length > 1)
+            {
+                int ipos = instanceStr.IndexOf('i');
+                if (ipos >= 0 && ipos < instanceStr.Length - 1 && int.TryParse(instanceStr.Substring(ipos + 1), out var iresult))
+                    instance = int.Clamp(iresult, 1, 9);
+            }
 
             foreach (var zone in HuntData.Zones)
             {
