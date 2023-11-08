@@ -48,6 +48,18 @@ public partial class MainWindow : Window, IDisposable
     private TrainLogExpansion _selectedTrain;
     private int _selectedTrainIndex;
 
+    public void SetTrainLogExpansion(Expansion ex)
+    {
+        for (int i = 0; i < _trainLogExpansions.Count; ++i)
+        {
+            if (_trainLogExpansions[i].Expansion == ex)
+            {
+                _selectedTrainIndex = i;
+                _selectedTrain = _trainLogExpansions[i];
+            }
+        }
+    }
+
     private void InitTrainLog()
     {
         DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "Grey.png")).ContinueWith(icon => {
