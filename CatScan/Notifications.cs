@@ -195,5 +195,8 @@ public class Notifications
             Plugin.MainWindow.IsOpen = true;
             Plugin.MainWindow.AutoClosed = false;
         }
+
+        if (isHuntZone)
+            Plugin.MainWindow.SetTrainLogExpansion(HuntModel.Territory.ZoneData.Expansion);
     }
 }
