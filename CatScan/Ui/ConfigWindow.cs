@@ -1,9 +1,7 @@
 ﻿using Dalamud.Interface.Windowing;
-using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using System;
-using System.IO;
 using System.Numerics;
 
 namespace CatScan.Ui;

@@ -5,9 +5,9 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace CatScan;
@@ -136,7 +136,7 @@ public class GameScanner : IDisposable
     public event ZoneChangeDelegate? ZoneChange;
 
     private CancellationTokenSource _disposalCts = new();
-    private ConcurrentQueue<Action> _emitQueue = new();
+    private Channel<Action> _emitChannel = Channel.CreateUnbounded<Action>();
 
     private int _updateFailCount = 0;
     private bool _frameworkUpdateRegistered = false;
@@ -194,90 +194,113 @@ public class GameScanner : IDisposable
     internal ScannerStats Stats => _stats;
     internal ScannerStats Stats1Sec => _stats1sec;
 
-    private bool _emitTaskActive = false;
-    private TaskCompletionSource _emitTaskPokeSource = new();
+    private bool emitReleaseFlag = false;
+    private object emitReleaseSignal = new();
+
+    // Because Draw runs immediately after FrameworkUpdate, and event handlers
+    // will contend with it for the HuntModel lock, PulseEmitQueue() will be called
+    // after Draw() is complete to ensure the event handlers will run in the time
+    // between frames, rather than potentially stalling the framework thread.
+    public void PulseEmitQueue()
+    {
+        lock (emitReleaseSignal)
+        {
+            emitReleaseFlag = true;
+            Monitor.Pulse(emitReleaseSignal);
+        }
+    }
+
+    private void WaitEmitQueue()
+    {
+        lock (emitReleaseSignal)
+        {
+            while (!emitReleaseFlag)
+                Monitor.Wait(emitReleaseSignal, 1);
+            emitReleaseFlag = false;
+        }
+    }
+
+    private void EmitNewEnemy(GameEnemy enemy)
+    {
+        ++_stats.EmittedEvents;
+        _emitChannel.Writer.TryWrite(() => { NewEnemy?.Invoke(enemy); });
+    }
+
+    private void EmitLostEnemy(GameEnemy enemy)
+    {
+        ++_stats.EmittedEvents;
+        _emitChannel.Writer.TryWrite(() => { LostEnemy?.Invoke(enemy); });
+    }
+
+    private void EmitUpdatedEnemy(GameEnemy enemy)
+    {
+        ++_stats.EmittedEvents;
+        _emitChannel.Writer.TryWrite(() => { UpdatedEnemy?.Invoke(enemy); });
+    }
+
+    private void EmitFate(GameFate fate)
+    {
+        ++_stats.EmittedEvents;
+        _emitChannel.Writer.TryWrite(() => { NewOrUpdatedFate?.Invoke(fate); });
+    }
+
+    private void EmitLostFate(GameFate fate)
+    {
+        ++_stats.EmittedEvents;
+        _emitChannel.Writer.TryWrite(() => { LostFate?.Invoke(fate); });
+    }
+
+    private void EmitZoneChange(GameZoneInfo zoneInfo)
+    {
+        ++_stats.EmittedEvents;
+        _emitChannel.Writer.TryWrite(() => { ZoneChange?.Invoke(zoneInfo); });
+    }
+
+    // Snapshot stat count changes every second
+    private void StartStatsTask()
+    {
+        var statsTaskTimer = new PeriodicTimer(System.TimeSpan.FromSeconds(1));
+
+        Task.Run(async () => {
+            while (await statsTaskTimer.WaitForNextTickAsync(_disposalCts.Token))
+            {
+                _stats1sec = ScannerStats.Subtract(_stats, _statsPrev);
+                _statsPrev = _stats;
+
+            }
+        }, _disposalCts.Token);
+    }
 
     // Events are queued and emitted as a task to avoid blocking the game while running logic
-    // Called from Framework thread, so uses a Task to emit events to avoid excessive work on the Framework thread
-    private void FlushEmitQueue()
+    private void StartEmitTask()
     {
-        if (_emitQueue.Count == 0 || _emitTaskActive)
-        {
-            // Task is active, poke it to do work
-            if (_emitQueue.Count > 0)
-                _emitTaskPokeSource.TrySetResult();
-
-            return;
-        }
-
-        _emitTaskActive = true;
+        var emitChannelReader = _emitChannel.Reader;
 
         Task.Run(async () => {
             var isDisposed = () => _disposalCts.Token.IsCancellationRequested;
 
             while (!isDisposed())
             {
-                while (!isDisposed() && _emitQueue.TryDequeue(out var action))
-                    action();
-
-                bool poked = false;
-
-                // Try to keep the task alive for a while to avoid creating/destroying it repeatedly
-                await Task.WhenAny(Task.Delay(1000, _disposalCts.Token), _emitTaskPokeSource.Task);
-
-                // We were poked to process new events
-                if (_emitTaskPokeSource.Task.IsCompleted)
+                while (emitChannelReader.TryRead(out var action))
                 {
-                    poked = true;
-                    _emitTaskPokeSource = new();
+                    try
+                    {
+                        action();
+                    }
+                    catch (Exception ex)
+                    {
+                        DalamudService.Log.Error(ex, "Event handler exception");
+                    }
                 }
 
-                // We weren't poked and the queue is empty, time to exit
-                if (!poked && _emitQueue.Count == 0)
-                    break;
-            }
+                await emitChannelReader.WaitToReadAsync(_disposalCts.Token);
 
-            _emitTaskActive = false;
+                WaitEmitQueue();
+            }
         }, _disposalCts.Token);
     }
 
-    private void EmitNewEnemy(GameEnemy enemy)
-    {
-        ++_stats.EmittedEvents;
-        _emitQueue.Enqueue(() => { NewEnemy?.Invoke(enemy); });
-    }
-
-    private void EmitLostEnemy(GameEnemy enemy)
-    {
-        ++_stats.EmittedEvents;
-        _emitQueue.Enqueue(() => { LostEnemy?.Invoke(enemy); });
-    }
-
-    private void EmitUpdatedEnemy(GameEnemy enemy)
-    {
-        ++_stats.EmittedEvents;
-        _emitQueue.Enqueue(() => { UpdatedEnemy?.Invoke(enemy); });
-    }
-
-    private void EmitFate(GameFate fate)
-    {
-        ++_stats.EmittedEvents;
-        _emitQueue.Enqueue(() => { NewOrUpdatedFate?.Invoke(fate); });
-    }
-
-    private void EmitLostFate(GameFate fate)
-    {
-        ++_stats.EmittedEvents;
-        _emitQueue.Enqueue(() => { LostFate?.Invoke(fate); });
-    }
-
-    private void EmitZoneChange(GameZoneInfo zoneInfo)
-    {
-        ++_stats.EmittedEvents;
-        // Zone changes are critical and infrequent, just emit them directly
-        _emitQueue.Clear();
-        Task.Run(() => { ZoneChange?.Invoke(zoneInfo); });
-    }
+    // Called
 
     public GameScanner()
     {
@@ -290,16 +313,8 @@ public class GameScanner : IDisposable
         // Trigger an initial update based on the current territory
         _territoryChanged = true;
 
-        Task.Run(async () => {
-            var isDisposed = () => _disposalCts.Token.IsCancellationRequested;
-
-            while (!isDisposed())
-            {
-                _stats1sec = ScannerStats.Subtract(_stats, _statsPrev);
-                _statsPrev = _stats;
-                await Task.Delay(1000);
-            }
-        }, _disposalCts.Token);
+        StartStatsTask();
+        StartEmitTask();
     }
 
     // This should be called in response to a ZoneChange event to enable object scanning
@@ -312,7 +327,9 @@ public class GameScanner : IDisposable
     public void Dispose()
     {
         UnregisterFrameworkUpdate();
+        _emitChannel.Writer.Complete();
         _disposalCts.Cancel();
+        PulseEmitQueue();
         DalamudService.ClientState.Login -= OnLogin;
         DalamudService.ClientState.Logout -= OnLogout;
         DalamudService.ClientState.TerritoryChanged -= OnTerritoryChanged;
@@ -486,11 +503,6 @@ public class GameScanner : IDisposable
 
             if (hpPct == 0.0f || bnpc.IsDead)
             {
-                isDead = true;
-            }
-            else if (hpPct < 1.0f && cachedEnemy.Name == "Archaeotania")
-            {
-                // HACK: Godzilla doesn't die but ends the fight at low HP
                 isDead = true;
             }
 
@@ -789,27 +801,16 @@ public class GameScanner : IDisposable
         if (!GameData.NameDataReady)
             return;
 
-        try
-        {
-            // Accumulate time if the update fails for a temporary reason
-            _deltaMs += System.Math.Clamp(DalamudService.Framework.UpdateDelta.TotalMilliseconds, 1.0, 100.0);
+        // Accumulate time if the update fails for a temporary reason
+        _deltaMs += System.Math.Clamp(DalamudService.Framework.UpdateDelta.TotalMilliseconds, 1.0, 100.0);
 
-            if (double.IsNaN(_deltaMs))
-                _deltaMs = 100.0;
+        if (double.IsNaN(_deltaMs))
+            _deltaMs = 100.0;
 
-            var x = _nextIdx;
-            ScanTick();
+        ScanTick();
+        ScanFateTick();
 
-            // Scan fate table only once for each full object table sweep
-            //if (x <= _nextIdx)
-                ScanFateTick();
-
-            _deltaMs = 0.0;
-        }
-        finally
-        {
-            FlushEmitQueue();
-        }
+        _deltaMs = 0.0;
     }
 
     private void UnregisterFrameworkUpdate()
@@ -837,7 +838,8 @@ public class GameScanner : IDisposable
         if (_updateFailCount > 20)
         {
             DalamudService.Log.Error("Stopping scanner due to too many errors");
-            UnregisterFrameworkUpdate();
+            DalamudService.Framework.Update -= OnFrameworkUpdate;
+            _frameworkUpdateRegistered = false;
             return;
         }
 

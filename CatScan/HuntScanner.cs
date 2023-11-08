@@ -75,7 +75,7 @@ public class HuntScanner
         {
             if (result.Value.Rank == Rank.Minion)
             {
-                HuntModel.ScanResults.Remove(result.Key);
+                HuntModel.ScanResults.Remove(result.Key, out _);
                 break;
             }
         }
@@ -120,6 +120,8 @@ public class HuntScanner
 
     private void OnNewEnemy(GameEnemy enemy)
     {
+        using var modelLock = HuntModel.Lock();
+
         foreach (var mark in HuntModel.Territory.ZoneData.Marks)
         {
             if (mark.Name == enemy.EnglishName)
@@ -144,7 +146,6 @@ public class HuntScanner
 
                 // There can be a new object ID picked up with the same name as an already logged mark
                 // This is either a respawn, a bug, or in the case of SS minions: expected
-                // FIXME: Can also happen if you have a saved scan list -- need to compare the Object IDs?
                 if (HuntModel.ScanResults.TryGetValue(enemy.EnglishName, out var scanResult))
                 {
                     // XXX: An object ID of 0 comes from importing hunt train data
@@ -153,7 +154,7 @@ public class HuntScanner
                 }
                 else
                 {
-                    HuntModel.ScanResults.Add(enemy.EnglishName, scanResult = new ScanResult(){
+                    HuntModel.ScanResults.TryAdd(enemy.EnglishName, scanResult = new ScanResult(){
                         Rank = mark.Rank,
                         Name = enemy.Name,
                         Missing = false,
@@ -177,6 +178,8 @@ public class HuntScanner
 
     private void OnLostEnemy(GameEnemy enemy)
     {
+        using var modelLock = HuntModel.Lock();
+
         // Its not possible to tell if a KC mob dies while out of range, so keep count of them
         if (_kcEnemies.TryGetValue(enemy.ObjectId, out var kcEnemy) && HuntModel.TryGetKillCount(enemy.Name, out var kcLogEntry))
         {
@@ -193,6 +196,8 @@ public class HuntScanner
 
     private void OnFate(GameFate fate)
     {
+        using var modelLock = HuntModel.Lock();
+
         // Update to an already recorded FATE
         if (HuntModel.ActiveFates.TryGetValue(fate.FateId, out var activeFate))
         {
@@ -206,7 +211,7 @@ public class HuntScanner
                 Epic = HuntData.EpicFates.Contains(fate.EnglishName),
                 FirstSeenTimeUtc = HuntModel.UtcNow
             };
-            HuntModel.ActiveFates.Add(fate.FateId, activeFate);
+            HuntModel.ActiveFates.TryAdd(fate.FateId, activeFate);
             UpdateActiveFate(activeFate, fate);
             NewFate?.Invoke(activeFate);
         }
@@ -214,6 +219,8 @@ public class HuntScanner
 
     private void OnLostFate(GameFate fate)
     {
+        using var modelLock = HuntModel.Lock();
+
         if ((fate.State != FateState.Ended && fate.ProgressPct < 100.0f)
          || fate.State == FateState.Failed)
         {
@@ -222,11 +229,13 @@ public class HuntScanner
         }
 
         // If Eureka support is added this would be a good place to clear the kill count for an NM
-        HuntModel.ActiveFates.Remove(fate.FateId);
+        HuntModel.ActiveFates.Remove(fate.FateId, out _);
     }
 
     private void OnUpdatedEnemy(GameEnemy enemy)
     {
+        using var modelLock = HuntModel.Lock();
+
         // This is a KC mob dying or coming back in range
         if (_kcEnemies.TryGetValue(enemy.ObjectId, out var kcEnemy) && HuntModel.TryGetKillCount(enemy.Name, out var kcLogEntry))
         {
@@ -261,6 +270,8 @@ public class HuntScanner
     // Apply dynamic data from a scanned GameEnemy on to an existing Scan Result
     private void UpdateFate(ScanResult scanResult, GameEnemy gameEnemy)
     {
+        using var modelLock = HuntModel.Lock();
+
         // name and rank are never updated
         scanResult.RawX = gameEnemy.X;
         scanResult.RawZ = gameEnemy.Z;
@@ -281,6 +292,8 @@ public class HuntScanner
 
     private void OnZoneChange(GameZoneInfo zoneInfo)
     {
+        using var modelLock = HuntModel.Lock();
+
         // Roll back the Missing count for the currently tracked lost enemies
         foreach (var kcEnemy in _kcEnemies.Values)
         {

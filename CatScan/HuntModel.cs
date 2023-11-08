@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace CatScan;
 
@@ -52,10 +54,9 @@ public class ScanResult
     // This lets us distinguish respawns
     public uint ObjectId;
 
-    public bool Dead => (HpPct == 0.0);
+    public bool MapWide => (Rank == Rank.S || Rank == Rank.FATE);
+    public bool Dead => (HpPct == 0.0) || (MapWide && Missing);
     public bool Pulled => (HpPct < 100.0);
-
-    public bool PossiblyDead => Dead || Missing;
 
     public System.DateTime LastSeenTimeUtc;
     public System.DateTime KillTimeUtc;
@@ -135,7 +136,26 @@ public class ZoneCacheEntry
     public List<KillCount> KillCountLog = new();
 }
 
-static class HuntModel
+public class HuntModelLock : IDisposable
+{
+    private Action? _action;
+
+    public HuntModelLock(Action? action)
+    {
+        _action = action;
+    }
+
+    public void Dispose()
+    {
+        if (_action != null)
+        {
+            _action();
+            _action = null;
+        }
+    }
+}
+
+public static class HuntModel
 {
     public static System.DateTime UtcNow => System.DateTime.UtcNow;
 
@@ -154,11 +174,6 @@ static class HuntModel
 
     // --- Fields NOT stored in the zone cache
 
-    // TODO: Maybe save this data when changing zones
-    // In theory this information could be stored and then compared when re-entering
-    // As long as you return in under 5 minutes, its very likely that no fates begun
-    // and failed, at least in Southern Thanalan.
-
     // A list of active FATEs
     public static Dictionary<uint, ActiveFate> ActiveFates = new();
 
@@ -168,8 +183,40 @@ static class HuntModel
     // --- Page data in and out for per-zone persistence
 
     private static Dictionary<string, ZoneCacheEntry> ZoneCache = new();
-
     private static ZoneCacheEntry CurrentZoneCacheEntry;
+
+    // --- Locking
+    // SpinLock because encouraging the main game thread go to sleep seems like a bad idea.
+
+    private static SpinLock _lock = new();
+
+    public static HuntModelLock Lock(bool critical = false)
+    {
+        if (_lock.IsHeldByCurrentThread)
+            return new HuntModelLock(null);
+
+        bool lockTaken = false;
+
+        if (!critical)
+        {
+            _lock.TryEnter(1, ref lockTaken);
+
+            if (!lockTaken)
+                System.Threading.Thread.Yield();
+        }
+
+        if (!lockTaken)
+        {
+            _lock.Enter(ref lockTaken);
+
+            if (!lockTaken)
+                throw new Exception("Failed to lock HuntModel");
+        }
+
+        return new HuntModelLock(() => {
+            _lock.Exit(true);
+        });
+    }
 
     static HuntModel()
     {
@@ -216,7 +263,7 @@ static class HuntModel
             }
 
             if (!hasData)
-                ZoneCache.Remove(new ZoneCacheKey(Territory.WorldId, Territory.ZoneId, Territory.Instance).ToString());
+                ZoneCache.Remove(new ZoneCacheKey(Territory.WorldId, Territory.ZoneId, Territory.Instance).ToString(), out _);
         }
 
         Territory.WorldId = worldId;
@@ -226,7 +273,7 @@ static class HuntModel
         var zoneKey = new ZoneCacheKey(worldId, zoneId, instance).ToString();
 
         if (!ZoneCache.ContainsKey(zoneKey))
-            ZoneCache.Add(zoneKey, new());
+            ZoneCache.TryAdd(zoneKey, new());
 
         CurrentZoneCacheEntry = ZoneCache[zoneKey];
 
@@ -247,7 +294,7 @@ static class HuntModel
         var zoneKey = new ZoneCacheKey(Territory.WorldId, zoneId, instance).ToString();
 
         if (!ZoneCache.ContainsKey(zoneKey))
-            ZoneCache.Add(zoneKey, new());
+            ZoneCache.TryAdd(zoneKey, new());
 
         return ZoneCache[zoneKey];
     }
@@ -273,7 +320,7 @@ static class HuntModel
         if (data != null)
         {
             foreach (var r in data)
-                ZoneCache.Add(r.Key, r.Value);
+                ZoneCache.TryAdd(r.Key, r.Value);
         }
 
         // After deserialization we need to update the current zone reference

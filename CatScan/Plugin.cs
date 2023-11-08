@@ -55,6 +55,7 @@ public sealed class Plugin : IDalamudPlugin
     public void Dispose()
     {
         _gameScanner.Dispose();
+        Notifications.Dispose();
 
         DalamudService.PluginInterface.UiBuilder.Draw -= Draw;
         DalamudService.PluginInterface.UiBuilder.OpenMainUi -= OpenMainUi;
@@ -70,7 +71,11 @@ public sealed class Plugin : IDalamudPlugin
 
     private static void Draw()
     {
-        Plugin.WindowSystem.Draw();
+        {
+            using var modelLock = HuntModel.Lock(true);
+            Plugin.WindowSystem.Draw();
+        }
+        _gameScanner.PulseEmitQueue();
     }
 
     public static void OpenMainUi()
