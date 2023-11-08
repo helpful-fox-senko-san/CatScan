@@ -1,11 +1,14 @@
 using NAudio.Wave;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace CatScan;
 
-public class Notifications
+public class Notifications : IDisposable
 {
     private HuntScanner _huntScanner;
     private string _resourcePath = "";
@@ -32,6 +35,10 @@ public class Notifications
     // XXX: Low quality hack to try avoid pinging Coeurlregina during the Long Live the Coeurls fate
     private bool _coeurlHackFlag = false;
 
+    private CancellationTokenSource _disposalCts = new();
+    private Channel<string> _playSfxChannel = Channel.CreateBounded<string>(2);
+    private bool _sfxReady = false;
+
     private CachedSample PreloadSfx(string filename)
     {
         using var waveStream = new WaveFileReader(Path.Combine(_resourcePath, filename));
@@ -45,6 +52,8 @@ public class Notifications
 
     private void OpenMapLink(float mapX, float mapY)
     {
+        var mapRetryTimer = new PeriodicTimer(System.TimeSpan.FromMilliseconds(500));
+
         // Map linking can fail if we detect something immediately after a teleport
         // Retry for up to 5 seconds in the background
         Task.Run(async () => {
@@ -54,9 +63,23 @@ public class Notifications
                 if (!Plugin.BetweenAreas && await GameFunctions.OpenMapLink(mapX, mapY))
                     break;
 
-                await Task.Delay(500);
+                await mapRetryTimer.WaitForNextTickAsync();
             }
         });
+    }
+
+    private void StartSfxPlayerTask()
+    {
+        var sfxChannelReader = _playSfxChannel.Reader;
+
+        Task.Run(async () => {
+            while (await sfxChannelReader.WaitToReadAsync(_disposalCts.Token))
+            {
+                while (sfxChannelReader.TryRead(out var filename)
+                 && !_disposalCts.Token.IsCancellationRequested)
+                    ReallyPlaySfx(filename);
+            }
+        }, _disposalCts.Token);
     }
 
     public Notifications(HuntScanner huntScanner)
@@ -67,13 +90,27 @@ public class Notifications
         _huntScanner.ZoneChange += OnZoneChange;
         _resourcePath = Path.Combine(DalamudService.PluginInterface.AssemblyLocation.Directory?.FullName!, "Resources");
 
-        PreloadSfx("ping1.wav");
-        PreloadSfx("ping2.wav");
-        PreloadSfx("ping3.wav");
+        Task.Run(() => {
+            PreloadSfx("ping1.wav");
+            PreloadSfx("ping2.wav");
+            PreloadSfx("ping3.wav");
+            _sfxReady = true;
+        });
+
+        StartSfxPlayerTask();
     }
 
-    public void PlaySfx(string filename)
+    public void Dispose()
     {
+        _playSfxChannel.Writer.Complete();
+        _disposalCts.Cancel();
+    }
+
+    private void ReallyPlaySfx(string filename)
+    {
+        if (!_sfxReady)
+            return;
+
         if (!_cachedWavFiles.TryGetValue(filename, out var cachedSample))
             cachedSample = PreloadSfx(filename);
 
@@ -94,6 +131,11 @@ public class Notifications
             waveChannel.Dispose();
             waveOut.Dispose();
         };
+    }
+
+    public void PlaySfx(string filename)
+    {
+        _playSfxChannel.Writer.TryWrite(filename);
     }
 
     private void HandleAutoOpen(Rank rank, float mapX, float mapY)

@@ -8,7 +8,7 @@ public class GameFunctions
         var data = GameData.GetZoneData(zoneId);
         return DalamudService.Framework.RunOnFrameworkThread<bool>(() => {
             var mapPayload = new Dalamud.Game.Text.SeStringHandling.Payloads.MapLinkPayload(
-                (uint)CatScan.HuntModel.Territory.ZoneId, data.MapId, mapX, mapY
+                (uint)zoneId, data.MapId, mapX, mapY
             );
             return DalamudService.GameGui.OpenMapWithMapLink(mapPayload);
         });

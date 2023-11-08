@@ -32,7 +32,6 @@ public partial class MainWindow : Window, IDisposable
 
         var fateList = new List<ActiveFate>(HuntModel.ActiveFates.Values);
 
-        // TODO: Need to display an estimate of how long a fate has been in preparation phase
         fateList.Sort((ActiveFate a, ActiveFate b) => {
             if (a.Running && !b.Running)
                 return -1;
@@ -84,7 +83,7 @@ public partial class MainWindow : Window, IDisposable
             ImGui.TableNextColumn();
 
             Vector4 color = Vector4.Zero;
-            // TODO: Track fate progress %
+
             if (f.Running && timeRemaining <= TimeSpan.Zero)
                 color = _textColorDead;
             else if (f.ProgressPct > 0.0)
@@ -132,8 +131,8 @@ public partial class MainWindow : Window, IDisposable
             }
             else
             {
-                // TODO: This timer will not be accurate when first entering a zone
-                // Need a way to track which fates were initially active
+                // XXX: This timer will not be accurate when first entering a zone
+                //      Need a way to track which fates were initially active
                 var span = f.FirstSeenAgo;
                 var mins = System.Math.Floor(span.TotalMinutes).ToString("0");
                 var secs = span.Seconds.ToString("00");

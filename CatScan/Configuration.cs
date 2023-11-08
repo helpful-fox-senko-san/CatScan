@@ -1,5 +1,6 @@
 ﻿using Dalamud.Configuration;
 using System;
+using System.Threading.Tasks;
 
 namespace CatScan;
 
@@ -35,6 +36,11 @@ public class Configuration : IPluginConfiguration
 
     public void Save()
     {
-        DalamudService.PluginInterface.SavePluginConfig(this);
+        Task.Run(() => {
+            lock (this)
+            {
+                DalamudService.PluginInterface.SavePluginConfig(this);
+            }
+        });
     }
 }

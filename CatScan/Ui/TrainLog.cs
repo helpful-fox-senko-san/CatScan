@@ -234,7 +234,7 @@ public partial class MainWindow : Window, IDisposable
 
                     if (!found)
                     {
-                        model.ScanResults.Add(mobNameEn, new ScanResult(){
+                        model.ScanResults.TryAdd(mobNameEn, new ScanResult(){
                             Rank = Rank.A,
                             Name = mobName,
                             // Could calculate raw coords but we don't use them anyway
