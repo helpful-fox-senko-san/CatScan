@@ -166,10 +166,10 @@ public class Notifications : IDisposable
         string? sfx = null;
 
         // These are handled by OnNewEpicFate instead
-        if (scanResult.Name == "Tristitia")
+        if (scanResult.EnglishName == "Tristitia")
             return;
 
-        if (scanResult.Name == "Coeurlregina" && _coeurlHackFlag)
+        if (scanResult.EnglishName == "Coeurlregina" && _coeurlHackFlag)
         {
             _coeurlHackFlag = false;
             return;

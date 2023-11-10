@@ -34,6 +34,8 @@ public class Configuration : IPluginConfiguration
 
     public bool ShowMissingKC { get; set; } = false;
 
+    public bool SpecialFieldOps { get; set; } = true;
+
     public void Save()
     {
         Task.Run(() => {

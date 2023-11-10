@@ -18,7 +18,7 @@ public class HuntTerritory
     public string WorldName { get; set; } = string.Empty;
 
     private int cachedZoneId = -1;
-    private Zone cachedZoneData;
+    private Zone cachedZoneData = new Zone(Expansion.Unknown, string.Empty, 0);
 
     private Zone GetZoneData()
     {
@@ -28,7 +28,9 @@ public class HuntTerritory
         cachedZoneId = ZoneId;
 
         // Fill the current zone with dummy data if its not known
-        if (!HuntData.Zones.TryGetValue(ZoneId, out cachedZoneData))
+        if (HuntData.Zones.TryGetValue(ZoneId, out var zoneData))
+            cachedZoneData = zoneData;
+        else
             cachedZoneData = new Zone(Expansion.Unknown, string.Empty, 0);
 
         return cachedZoneData;
@@ -43,7 +45,7 @@ public class HuntTerritory
 public class ScanResult
 {
     public Rank Rank;
-    public string Name = string.Empty;
+    public string EnglishName = string.Empty;
     public float RawX;
     public float RawZ;
     public float MapX;
@@ -58,9 +60,11 @@ public class ScanResult
     public bool Dead => (HpPct == 0.0) || (MapWide && Missing);
     public bool Pulled => (HpPct < 100.0);
 
+    public System.DateTime FirstSeenTimeUtc;
     public System.DateTime LastSeenTimeUtc;
     public System.DateTime KillTimeUtc;
 
+    public System.TimeSpan FirstSeenAgo => HuntModel.UtcNow - FirstSeenTimeUtc;
     public System.TimeSpan LastSeenAgo => Missing ? HuntModel.UtcNow - LastSeenTimeUtc : System.TimeSpan.Zero;
     public System.TimeSpan KillTimeAgo => Dead ? HuntModel.UtcNow - KillTimeUtc : System.TimeSpan.Zero;
 }

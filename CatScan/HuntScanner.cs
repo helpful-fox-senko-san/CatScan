@@ -48,29 +48,63 @@ public class HuntScanner
         return ((41.0f / scale) * ((raw + 1024.0f) / 2048.0f)) + 1.0f - offset;
     }
 
-    private void KilledS()
+    // Clear kill count data after an S rank is killed
+    // It could be cleared when it spawns instead, but you may want some time to see the final count
+    private void KilledS(string englishName)
     {
-        // Eureka/Bozja has multiple "S" ranks and multiple kill counts
-        // Skip clearing the kill count until there's an association between them individually
-        if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka
-         || HuntModel.Territory.ZoneData.Expansion == Expansion.Bozja)
-            return;
+        DalamudService.Log.Info("KilledS");
+        // Eureka/Bozja has multiple spawns associated with multiple kill count mobs
+        // Only clear the singular associated KC
 
-        // Clear kill count data after an S rank is killed
-        // It could be cleared when it spawns instead, but you may want some time to see the final count
-        foreach (var kcLogEntry in HuntModel.KillCountLog)
+        if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka)
         {
-            kcLogEntry.Killed = 0;
-            kcLogEntry.Missing = 0;
-        }
+            DalamudService.Log.Info("NM death in a eureka zone");
+            if (!HuntData.EurekaZones.TryGetValue(HuntModel.Territory.ZoneId, out var eurekaZone))
+                return;
 
-        _kcEnemies.Clear();
+            DalamudService.Log.Info("zone data found");
+            foreach (var nm in eurekaZone.NMs)
+            {
+                if (nm.NMName == englishName)
+                {
+
+                    DalamudService.Log.Info("NM found");
+                    foreach (var kcLogEntry in HuntModel.KillCountLog)
+                    {
+                        if (kcLogEntry.EnglishName == nm.KCName)
+                        {
+                            DalamudService.Log.Info("KC mob found");
+                            kcLogEntry.Killed = 0;
+                            kcLogEntry.Missing = 0;
+                        }
+                    }
+                    break;
+                }
+            }
+
+            // TODO: Selectively clean-up _kcEnemies as well?
+        }
+        else if (HuntModel.Territory.ZoneData.Expansion == Expansion.Bozja)
+        {
+            // TODO: Implement Bozja logic
+            return;
+        }
+        else
+        {
+            foreach (var kcLogEntry in HuntModel.KillCountLog)
+            {
+                kcLogEntry.Killed = 0;
+                kcLogEntry.Missing = 0;
+            }
+
+            _kcEnemies.Clear();
+        }
     }
 
+    // Clear minion scan results after an SS is killed
+    // (Removing one entry is enough, since only one is ever logged)
     private void KilledSS()
     {
-        // Clear minion scan results after an SS is killed
-        // Removing one entry is enough, since only one is ever logged
         foreach (var result in HuntModel.ScanResults)
         {
             if (result.Value.Rank == Rank.Minion)
@@ -95,6 +129,8 @@ public class HuntScanner
         if (scanResult.HpPct != 0.0 && gameEnemy.HpPct == 0.0)
         {
             scanResult.KillTimeUtc = HuntModel.UtcNow;
+            if (scanResult.Rank == Rank.S)
+                KilledS(scanResult.EnglishName);
             if (scanResult.Rank == Rank.SS)
                 KilledSS();
         }
@@ -131,12 +167,11 @@ public class HuntScanner
                 {
                     if (_kcEnemies.ContainsKey(enemy.ObjectId))
                     {
-                        DalamudService.Log.Warning($"Received NewEnemy event for the same object id twice.");
                         OnUpdatedEnemy(enemy);
                         break;
                     }
 
-                    _kcEnemies.Add(enemy.ObjectId, new KCEnemy(enemy));
+                    _kcEnemies.TryAdd(enemy.ObjectId, new KCEnemy(enemy));
                     // Tell GameScanner to only update us if the enemy is killed
                     enemy.InterestingKC = true;
                     break;
@@ -156,9 +191,10 @@ public class HuntScanner
                 {
                     HuntModel.ScanResults.TryAdd(enemy.EnglishName, scanResult = new ScanResult(){
                         Rank = mark.Rank,
-                        Name = enemy.Name,
+                        EnglishName = enemy.EnglishName,
                         Missing = false,
-                        ObjectId = enemy.ObjectId
+                        ObjectId = enemy.ObjectId,
+                        FirstSeenTimeUtc = HuntModel.UtcNow
                     });
                     isNew = true;
                 }
@@ -249,6 +285,9 @@ public class HuntScanner
 
             if (enemy.HpPct == 0.0)
             {
+                // TODO: Don't count KC while in a eureka zone if:
+                // - NM is already spawned
+                // - NM is dead and has been seen in the last 2 hours
                 ++kcLogEntry.Killed;
                 _kcEnemies.Remove(enemy.ObjectId);
             }
@@ -265,29 +304,6 @@ public class HuntScanner
 
             UpdateScanResult(scanResult, enemy);
         }
-    }
-
-    // Apply dynamic data from a scanned GameEnemy on to an existing Scan Result
-    private void UpdateFate(ScanResult scanResult, GameEnemy gameEnemy)
-    {
-        using var modelLock = HuntModel.Lock();
-
-        // name and rank are never updated
-        scanResult.RawX = gameEnemy.X;
-        scanResult.RawZ = gameEnemy.Z;
-        scanResult.MapX = ToMapOrd(gameEnemy.X, _zoneData.MapOffsetX, _zoneData.MapScale);
-        scanResult.MapY = ToMapOrd(gameEnemy.Z, _zoneData.MapOffsetY, _zoneData.MapScale);
-
-        if (scanResult.HpPct != 0.0 && gameEnemy.HpPct == 0.0)
-        {
-            scanResult.KillTimeUtc = HuntModel.UtcNow;
-            if (scanResult.Rank == Rank.S)
-                KilledS();
-            if (scanResult.Rank == Rank.SS)
-                KilledSS();
-        }
-
-        scanResult.HpPct = gameEnemy.HpPct;
     }
 
     private void OnZoneChange(GameZoneInfo zoneInfo)
