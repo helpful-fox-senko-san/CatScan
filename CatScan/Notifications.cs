@@ -165,8 +165,8 @@ public class Notifications : IDisposable
     {
         string? sfx = null;
 
-        // These are handled by OnNewEpicFate instead
-        if (scanResult.EnglishName == "Tristitia")
+        // Eureka NMs will be pinged based on their FATE instead, because they are not all infinite range
+        if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka)
             return;
 
         if (scanResult.EnglishName == "Coeurlregina" && _coeurlHackFlag)
@@ -199,7 +199,7 @@ public class Notifications : IDisposable
         _coeurlHackFlag = false;
 
         // Notify for fates that don't spawn with the boss initially present
-        if (fate.Name == "Long Live the Coeurl")
+        if (fate.EnglishName == "Long Live the Coeurl")
         {
             if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertFATE)
                 Plugin.Notifications.PlaySfx("ping3.wav");
@@ -207,16 +207,24 @@ public class Notifications : IDisposable
             HandleAutoOpen(Rank.FATE, fate.MapX, fate.MapY);
         }
 
-        if (fate.Name == "The Baldesion Arsenal: Expedition Support")
+        // Notify for NM fates in Eureka
+        if (HuntData.EurekaZones.TryGetValue(HuntModel.Territory.ZoneId, out var eurekaZone))
         {
-            if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertS)
-                Plugin.Notifications.PlaySfx("ping3.wav");
-            HandleAutoOpen(Rank.S, fate.MapX, fate.MapY);
+            foreach (var nm in eurekaZone.NMs)
+            {
+                if (fate.EnglishName == nm.FateName)
+                {
+                    if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertS)
+                        Plugin.Notifications.PlaySfx("ping3.wav");
+                    HandleAutoOpen(Rank.S, fate.MapX, fate.MapY);
+                    return;
+                }
+            }
         }
 
         // Alert for pre-CE fates in Bozja/Zadnor -- but not their Part 2 fates
         if (((HuntModel.Territory.ZoneId == 920 || HuntModel.Territory.ZoneId == 975) && fate.Epic)
-         && fate.Name != "Of Steel and Flame" && fate.Name != "Attack of the Supersoldiers")
+         && fate.EnglishName != "Of Steel and Flame" && fate.EnglishName != "Attack of the Supersoldiers")
         {
             if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertFATE)
                 Plugin.Notifications.PlaySfx("ping3.wav");
