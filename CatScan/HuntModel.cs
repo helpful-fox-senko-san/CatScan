@@ -73,6 +73,7 @@ public class ActiveFate
 {
     public bool Epic;
     public string Name = string.Empty;
+    public string EnglishName = string.Empty;
     public float RawX;
     public float RawZ;
     public float MapX;
@@ -179,7 +180,7 @@ public static class HuntModel
     // --- Fields NOT stored in the zone cache
 
     // A list of active FATEs
-    public static Dictionary<uint, ActiveFate> ActiveFates = new();
+    public static Dictionary<string, ActiveFate> ActiveFates = new();
 
     public static System.DateTime LastFailedFateUtc = System.DateTime.MinValue;
     public static string LastFailedFateName = string.Empty;

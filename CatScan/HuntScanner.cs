@@ -52,28 +52,22 @@ public class HuntScanner
     // It could be cleared when it spawns instead, but you may want some time to see the final count
     private void KilledS(string englishName)
     {
-        DalamudService.Log.Info("KilledS");
         // Eureka/Bozja has multiple spawns associated with multiple kill count mobs
         // Only clear the singular associated KC
 
         if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka)
         {
-            DalamudService.Log.Info("NM death in a eureka zone");
             if (!HuntData.EurekaZones.TryGetValue(HuntModel.Territory.ZoneId, out var eurekaZone))
                 return;
 
-            DalamudService.Log.Info("zone data found");
             foreach (var nm in eurekaZone.NMs)
             {
                 if (nm.NMName == englishName)
                 {
-
-                    DalamudService.Log.Info("NM found");
                     foreach (var kcLogEntry in HuntModel.KillCountLog)
                     {
                         if (kcLogEntry.EnglishName == nm.KCName)
                         {
-                            DalamudService.Log.Info("KC mob found");
                             kcLogEntry.Killed = 0;
                             kcLogEntry.Missing = 0;
                         }
@@ -227,7 +221,66 @@ public class HuntScanner
         }
 
         if (HuntModel.ScanResults.TryGetValue(enemy.EnglishName, out var scanResult))
+        {
+            if (HuntModel.Territory.ZoneId != 827) // Hydatos
+                scanResult.Missing = true;
+        }
+    }
+
+    // Special logic to deal with NMs not being infinite draw distance in Hydatos
+    private void SynthesizeEurekaNMCommon(string englishName, System.Action<EurekaNM> action)
+    {
+        if (!HuntData.EurekaZones.TryGetValue(HuntModel.Territory.ZoneId, out var eurekaZone))
+            return;
+
+        foreach (var nm in eurekaZone.NMs)
+        {
+            if (nm.FateName == englishName)
+                action(nm);
+        }
+    }
+
+    private void SynthesizeNewEurekaNM(ActiveFate activeFate, GameFate gameFate)
+    {
+        SynthesizeEurekaNMCommon(activeFate.EnglishName, (EurekaNM nm) => {
+            if (HuntModel.ScanResults.TryGetValue(nm.NMName, out var scanResult))
+                return;
+
+            HuntModel.ScanResults.TryAdd(nm.NMName, scanResult = new ScanResult(){
+                Rank = Rank.S,
+                EnglishName = nm.NMName,
+                Missing = (activeFate.ProgressPct == 100.0f),
+                ObjectId = 0,
+                RawX = activeFate.RawX,
+                RawZ = activeFate.RawZ,
+                MapX = activeFate.MapX,
+                MapY = activeFate.MapY,
+                HpPct = 100.0f - activeFate.ProgressPct
+            });
+        });
+    }
+
+    private void SynthesizeUpdatedEurekaNM(ActiveFate activeFate, GameFate gameFate)
+    {
+        SynthesizeEurekaNMCommon(activeFate.EnglishName, (EurekaNM nm) => {
+            if (!HuntModel.ScanResults.TryGetValue(nm.NMName, out var scanResult))
+                return;
+
+            scanResult.Missing = (activeFate.ProgressPct == 100.0f);
+            scanResult.HpPct = 100.0f - activeFate.ProgressPct;
+        });
+    }
+
+    private void SynthesizeLostEurekaNM(ActiveFate activeFate, GameFate gameFate)
+    {
+        SynthesizeEurekaNMCommon(activeFate.EnglishName, (EurekaNM nm) => {
+            if (!HuntModel.ScanResults.TryGetValue(nm.NMName, out var scanResult))
+                return;
+
             scanResult.Missing = true;
+            scanResult.HpPct = 0.0f;
+            KilledS(nm.NMName);
+        });
     }
 
     private void OnFate(GameFate fate)
@@ -235,21 +288,28 @@ public class HuntScanner
         using var modelLock = HuntModel.Lock();
 
         // Update to an already recorded FATE
-        if (HuntModel.ActiveFates.TryGetValue(fate.FateId, out var activeFate))
+        if (HuntModel.ActiveFates.TryGetValue(fate.EnglishName, out var activeFate))
         {
             UpdateActiveFate(activeFate, fate);
+
+            if (HuntModel.Territory.ZoneId == 827) // Hydatos
+                SynthesizeUpdatedEurekaNM(activeFate, fate);
         }
         else
         {
             // New fate -- only care if its a world boss fate
             activeFate = new ActiveFate(){
                 Name = fate.Name,
+                EnglishName = fate.EnglishName,
                 Epic = HuntData.EpicFates.Contains(fate.EnglishName),
                 FirstSeenTimeUtc = HuntModel.UtcNow
             };
-            HuntModel.ActiveFates.TryAdd(fate.FateId, activeFate);
+            HuntModel.ActiveFates.TryAdd(fate.EnglishName, activeFate);
             UpdateActiveFate(activeFate, fate);
             NewFate?.Invoke(activeFate);
+
+            if (HuntModel.Territory.ZoneId == 827) // Hydatos
+                SynthesizeNewEurekaNM(activeFate, fate);
         }
     }
 
@@ -264,8 +324,13 @@ public class HuntScanner
             HuntModel.LastFailedFateName = fate.Name;
         }
 
-        // If Eureka support is added this would be a good place to clear the kill count for an NM
-        HuntModel.ActiveFates.Remove(fate.FateId, out _);
+        if (HuntModel.Territory.ZoneId == 827) // Hydatos
+        {
+            if (HuntModel.ActiveFates.TryGetValue(fate.EnglishName, out var activeFate))
+                SynthesizeLostEurekaNM(activeFate, fate);
+        }
+
+        HuntModel.ActiveFates.Remove(fate.EnglishName, out _);
     }
 
     private void OnUpdatedEnemy(GameEnemy enemy)
