@@ -381,17 +381,24 @@ public class GameScanner : IDisposable
     }
 
     // Clear the current zone's information and cached enemy data
-    // Can be called from Framework thread OR from UI
-    public void ClearCache()
+    public void ClearCache(bool emitZoneChange = true)
     {
-        if (_worldId == -1)
-            return;
-
         DalamudService.Framework.RunOnFrameworkThread(() => {
             _enemyCache.Clear();
             _fateCache.Clear();
             _lostIds.Clear();
             RegisterFrameworkUpdate();
+
+            // Emitting a zone change lets HuntScanner clear its own tracking data
+            if (emitZoneChange)
+            {
+                EmitZoneChange(new GameZoneInfo(){
+                    WorldId = _worldId,
+                    ZoneId = _zoneId,
+                    Instance = _instance,
+                    WorldName = _worldName
+                });
+            }
         });
     }
 
@@ -754,7 +761,7 @@ public class GameScanner : IDisposable
             _worldId = -1;
             _zoneId = -1;
             _instance = -1;
-            ClearCache();
+            ClearCache(false);
             UnregisterFrameworkUpdate();
             return;
         }
@@ -766,7 +773,7 @@ public class GameScanner : IDisposable
             if (_betweenZones)
                 return;
 
-            ClearCache();
+            ClearCache(false);
 
             if (_territoryChanged || _zoneId < 0)
                 _zoneId = DalamudService.ClientState.TerritoryType;

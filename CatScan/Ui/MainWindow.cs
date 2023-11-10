@@ -29,6 +29,7 @@ public partial class MainWindow : Window, IDisposable
     }
 
     private Tabs? _forceOpenTab;
+    private bool _showFieldOpsTabs = false;
 
     // Set to true when closed automatically
     // If set, then the window is re-opened automatically too
@@ -108,17 +109,36 @@ public partial class MainWindow : Window, IDisposable
                 _forceOpenTab = null;
         };
 
-        using var tabs = ImRaii.TabBar("MainWindowTabs");
-        doTab("Scan Results", Tabs.ScanResults, DrawScanResults);
-        doTab("Train Log", Tabs.TrainLog, DrawTrainLog);
-        doTab("Fates", Tabs.Fates, DrawFates);
-        doTab("Kill Count", Tabs.KillCount, DrawKillCounts);
+        if (_showFieldOpsTabs)
+        {
+            DrawEurekaTracker();
+        }
+        else
+        {
+            using var tabs = ImRaii.TabBar("MainWindowTabs");
+            doTab("Scan Results##PrimaryTab", Tabs.ScanResults, DrawScanResults);
+            doTab("Train Log", Tabs.TrainLog, DrawTrainLog);
+            doTab("Fates", Tabs.Fates, DrawFates);
+            doTab("Kill Count", Tabs.KillCount, DrawKillCounts);
+        }
     }
 
     public override void Draw()
     {
         try
         {
+            // Enable field ops mode when enabled and in a Eureka zone
+            bool fieldOpsEligible = Plugin.Configuration.SpecialFieldOps && HuntData.IsEurekaZone(HuntModel.Territory.ZoneId);
+
+            if (fieldOpsEligible && !_showFieldOpsTabs)
+            {
+                _showFieldOpsTabs = true;
+            }
+            else if (!fieldOpsEligible && _showFieldOpsTabs)
+            {
+                _showFieldOpsTabs = false;
+            }
+
             DrawMainWindow();
         }
         catch (Exception ex)

@@ -154,7 +154,7 @@ public partial class MainWindow : Window, IDisposable
             if (a.Rank == b.Rank)
             {
                 if (a.Dead == b.Dead || !eureka)
-                    return a.Name.CompareTo(b.Name);
+                    return a.EnglishName.CompareTo(b.EnglishName);
                 else
                     return a.Dead ? 1 : -1;
             }
@@ -199,7 +199,7 @@ public partial class MainWindow : Window, IDisposable
             // The default hover colors are too intense
             using var pushColor2 = ImRaii.PushColor(ImGuiCol.HeaderHovered, RGB(48, 48, 48));
             using var pushColor3 = ImRaii.PushColor(ImGuiCol.HeaderActive, RGB(64, 64, 64));
-            if (ImGui.Selectable($"{r.Name} ( {r.MapX:F1} , {r.MapY:F1} ) HP: {r.HpPct:F1}%"))
+            if (ImGui.Selectable($"{r.EnglishName} ( {r.MapX:F1} , {r.MapY:F1} ) HP: {r.HpPct:F1}%"))
                 GameFunctions.OpenMapLink(r.MapX, r.MapY);
         }
 

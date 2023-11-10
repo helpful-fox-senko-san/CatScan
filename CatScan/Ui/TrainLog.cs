@@ -142,7 +142,7 @@ public partial class MainWindow : Window, IDisposable
 
             foreach (var result in scanCache.ScanResults.Values)
             {
-                if (result.Name == mark.Name)
+                if (result.EnglishName == mark.Name)
                 {
                     scanResult = result;
                     dead = result.Dead;
@@ -236,7 +236,7 @@ public partial class MainWindow : Window, IDisposable
                     {
                         model.ScanResults.TryAdd(mobNameEn, new ScanResult(){
                             Rank = Rank.A,
-                            Name = mobName,
+                            EnglishName = mobName,
                             // Could calculate raw coords but we don't use them anyway
                             RawX = 0.0f,
                             RawZ = 0.0f,
@@ -245,6 +245,7 @@ public partial class MainWindow : Window, IDisposable
                             HpPct = 100.0f,
                             // Object ID of 0 is treated special and should not trigger a ping
                             ObjectId = 0,
+                            FirstSeenTimeUtc = HuntModel.UtcNow,
                             LastSeenTimeUtc = HuntModel.UtcNow,
                             KillTimeUtc = System.DateTime.MinValue,
                             Missing = true
@@ -312,7 +313,7 @@ public partial class MainWindow : Window, IDisposable
 
             foreach (var result in scanCache.ScanResults.Values)
             {
-                if (result.Name == mark.Name)
+                if (result.EnglishName == mark.Name)
                 {
                     scanResult = result;
                     dead = result.Dead;

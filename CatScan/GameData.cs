@@ -172,14 +172,22 @@ public class GameData
         var fateNamesList = new List<(byte[], string)>();
         var seenNames = new HashSet<string>();
 
-        foreach (var fateName in CatScan.HuntData.EpicFates)
-        {
+        var addFate = (string fateName) => {
             var lowerName = fateName.ToLower(System.Globalization.CultureInfo.InvariantCulture);
             if (seenNames.Contains(lowerName))
-                continue;
+                return;
             seenNames.Add(lowerName);
             var byteArray = System.Text.Encoding.UTF8.GetBytes(lowerName);
             fateNamesList.Add(new(byteArray, fateName));
+        };
+
+        foreach (var fateName in CatScan.HuntData.EpicFates)
+            addFate(fateName);
+
+        foreach (var eurekaZone in CatScan.HuntData.EurekaZones.Values)
+        {
+            foreach (var nm in eurekaZone.NMs)
+                addFate(nm.FateName);
         }
 
         var fastStricmp = (System.ReadOnlySpan<byte> a, System.ReadOnlySpan<byte> b) =>
