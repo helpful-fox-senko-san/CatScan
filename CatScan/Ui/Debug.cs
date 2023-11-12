@@ -2,6 +2,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using System;
+using CatScan.FFXIV;
 
 namespace CatScan.Ui;
 
@@ -11,6 +12,7 @@ public partial class ConfigWindow : Window, IDisposable
     private bool _displayFateCache = false;
     private bool _displayBNpcNameCache = false;
     private bool _displayFateNameCache = false;
+    private bool _displayCETable = false;
 
     private void DrawDebug()
     {
@@ -169,6 +171,71 @@ public partial class ConfigWindow : Window, IDisposable
                 ImGui.TextUnformatted(entry.Key.ToString());
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(entry.Value.ToString());
+            }
+        }
+
+        ImGui.Separator();
+
+        if (ImGui.Checkbox($"Display Raw CE Table", ref _displayCETable) || _displayCETable)
+        {
+            unsafe
+            {
+                var cetable = DynamicEventManager.GetDynamicEventManager();
+
+                if (cetable == null)
+                {
+                    ImGui.Text("DynamicEventTable is not available here.");
+                    return;
+                }
+
+                using var table = ImRaii.Table("DynamicEventTable", 4);
+                ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("status", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("timer", ImGuiTableColumnFlags.WidthFixed);
+
+                for (int eventIndex = 0; eventIndex < DynamicEventManager.TableSize; ++eventIndex)
+                {
+                    DynamicEvent* ce = cetable->GetEvent(eventIndex);
+                    nint ceAddr = (nint)ce;
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted($"{ce->DynamicEventId}");
+
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted(ce->Name.ToString());
+
+                    ImGui.TableNextColumn();
+
+                    string statusStr =
+                        ce->Status switch
+                        {
+                            DynamicEventStatus.NotActive => "Not Active",
+                            DynamicEventStatus.Registration => "Register",
+                            DynamicEventStatus.Waiting => "Waiting",
+                            DynamicEventStatus.BattleUnderway => "Battle",
+                            _ => "Unknown"
+                        };
+
+                    if (ce->Status != DynamicEventStatus.NotActive)
+                        statusStr += $" ({ce->NumCombatants} / {ce->MaxCombatants})";
+
+                    ImGui.TextUnformatted(statusStr);
+
+                    ImGui.TableNextColumn();
+
+                    int now = (int)((DateTimeOffset)System.DateTime.UtcNow).ToUnixTimeSeconds();
+
+                    int mins = (ce->FinishTimeEpoch - now) / 60;
+                    int secs = (ce->FinishTimeEpoch - now) % 60;
+
+                    string timeStr = "--:--";
+
+                    if (ce->Status != DynamicEventStatus.NotActive)
+                        timeStr = $"{mins:00}:{secs:00}";
+
+                    ImGui.TextUnformatted(timeStr);
+                }
             }
         }
     }

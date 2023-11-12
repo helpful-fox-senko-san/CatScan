@@ -1,3 +1,4 @@
+using Dalamud.Game; // ISigScanner
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -14,6 +15,7 @@ public class DalamudService
     [PluginService] public static IGameGui GameGui { get; private set; } = null!;
     [PluginService] public static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] public static IPluginLog Log { get; private set; } = null!;
+    [PluginService] public static ISigScanner SigScanner { get; private set; } = null!;
 
     public static void Initialize(DalamudPluginInterface pluginInterface)
     {
