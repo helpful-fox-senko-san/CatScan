@@ -98,14 +98,22 @@ public partial class MainWindow : Window, IDisposable
                 // If there is no scanResult, that means the NM has not yet been seen, and assumed to be spawnable
             }
 
-            if (dead)
+            if (dead && scanResult != null)
             {
                 var respawnTime = TimeSpan.FromHours(2);
 
                 if (nm.NMName == "Ovni")
-                    respawnTime = TimeSpan.FromMinutes(30);
+                {
+                    // Ovni respawn is 30 minutes after death, rather than birth
+                    //  -or- only 20 minutes if it failed
+                    respawnTime = TimeSpan.FromMinutes(scanResult.HpPct == 0.0f ? 30 : 20);
+                    firstSeen = scanResult.LastSeenTimeUtc;
+                }
                 else if (nm.NMName == "Tristitia")
+                {
+                    // Support FATE respawn is... whenever people do BA
                     respawnTime = TimeSpan.Zero;
+                }
 
                 respawnIn = respawnTime - (HuntModel.UtcNow - firstSeen);
                 if (respawnIn < TimeSpan.Zero)

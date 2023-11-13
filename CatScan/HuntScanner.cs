@@ -279,7 +279,6 @@ public class HuntScanner
                 return;
 
             scanResult.Missing = true;
-            scanResult.HpPct = 0.0f;
             KilledS(nm.NMName);
         });
     }
