@@ -12,6 +12,7 @@ public partial class ConfigWindow : Window, IDisposable
     private bool _displayFateCache = false;
     private bool _displayBNpcNameCache = false;
     private bool _displayFateNameCache = false;
+    private bool _displayCENameCache = false;
     private bool _displayCETable = false;
 
     private void DrawDebug()
@@ -104,9 +105,11 @@ public partial class ConfigWindow : Window, IDisposable
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(entry.Key.ToString("X"));
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted(entry.Value.Name);
+                if (ImGui.Selectable(entry.Value.Name.ToString()))
+                    ImGui.SetClipboardText(entry.Value.Name.ToString());
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted(entry.Value.EnglishName);
+                if (ImGui.Selectable(entry.Value.EnglishName.ToString()))
+                    ImGui.SetClipboardText(entry.Value.EnglishName.ToString());
             }
 
             foreach (var entry in _gameScanner.LostIds)
@@ -124,9 +127,10 @@ public partial class ConfigWindow : Window, IDisposable
 
         if (ImGui.Checkbox($"Display FateCache ({_gameScanner.FateCacheSize})", ref _displayFateCache) || _displayFateCache)
         {
-            using var table = ImRaii.Table("EnemyCacheTable",2);
+            using var table = ImRaii.Table("EnemyCacheTable", 3);
             ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("name2", ImGuiTableColumnFlags.WidthStretch);
 
             foreach (var entry in _gameScanner.FateCache)
             {
@@ -134,7 +138,11 @@ public partial class ConfigWindow : Window, IDisposable
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(entry.Key.ToString());
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted(entry.Value.Name);
+                if (ImGui.Selectable(entry.Value.Name.ToString()))
+                    ImGui.SetClipboardText(entry.Value.Name.ToString());
+                ImGui.TableNextColumn();
+                if (ImGui.Selectable(entry.Value.EnglishName.ToString()))
+                    ImGui.SetClipboardText(entry.Value.EnglishName.ToString());
             }
         }
 
@@ -152,7 +160,8 @@ public partial class ConfigWindow : Window, IDisposable
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(entry.Key.ToString());
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted(entry.Value.ToString());
+                if (ImGui.Selectable(entry.Value.ToString()))
+                    ImGui.SetClipboardText(entry.Value.ToString());
             }
         }
 
@@ -170,7 +179,27 @@ public partial class ConfigWindow : Window, IDisposable
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(entry.Key.ToString());
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted(entry.Value.ToString());
+                if (ImGui.Selectable(entry.Value.ToString()))
+                    ImGui.SetClipboardText(entry.Value.ToString());
+            }
+        }
+
+        ImGui.Separator();
+
+        if (ImGui.Checkbox($"Display CENameCache ({GameData.CENameCacheSize})", ref _displayCENameCache) || _displayCENameCache)
+        {
+            using var table = ImRaii.Table("CENameCacheTable", 2);
+            ImGui.TableSetupColumn("id", ImGuiTableColumnFlags.WidthFixed);
+            ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
+
+            foreach (var entry in GameData.CENameCache)
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(entry.Key.ToString());
+                ImGui.TableNextColumn();
+                if (ImGui.Selectable(entry.Value.ToString()))
+                    ImGui.SetClipboardText(entry.Value.ToString());
             }
         }
 
@@ -203,21 +232,21 @@ public partial class ConfigWindow : Window, IDisposable
                     ImGui.TextUnformatted($"{ce->DynamicEventId}");
 
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(ce->Name.ToString());
+                    ImGui.Selectable(ce->Name.ToString());
 
                     ImGui.TableNextColumn();
 
                     string statusStr =
-                        ce->Status switch
+                        ce->State switch
                         {
-                            DynamicEventStatus.NotActive => "Not Active",
-                            DynamicEventStatus.Registration => "Register",
-                            DynamicEventStatus.Waiting => "Waiting",
-                            DynamicEventStatus.BattleUnderway => "Battle",
+                            DynamicEventState.NotActive => "Not Active",
+                            DynamicEventState.Registration => "Register",
+                            DynamicEventState.Waiting => "Waiting",
+                            DynamicEventState.BattleUnderway => "Battle",
                             _ => "Unknown"
                         };
 
-                    if (ce->Status != DynamicEventStatus.NotActive)
+                    if (ce->State != DynamicEventState.NotActive)
                         statusStr += $" ({ce->NumCombatants} / {ce->MaxCombatants})";
 
                     ImGui.TextUnformatted(statusStr);
@@ -231,7 +260,7 @@ public partial class ConfigWindow : Window, IDisposable
 
                     string timeStr = "--:--";
 
-                    if (ce->Status != DynamicEventStatus.NotActive)
+                    if (ce->State != DynamicEventState.NotActive)
                         timeStr = $"{mins:00}:{secs:00}";
 
                     ImGui.TextUnformatted(timeStr);

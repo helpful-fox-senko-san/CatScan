@@ -6,7 +6,7 @@ using FFXIVClientStructs.FFXIV.Common.Math;
 
 namespace CatScan.FFXIV;
 
-public enum DynamicEventStatus : byte
+public enum DynamicEventState : byte
 {
     NotActive = 0,
     Registration = 1,
@@ -14,7 +14,7 @@ public enum DynamicEventStatus : byte
     BattleUnderway = 3
 }
 
-public enum DynamicEventRegistrationStatus : byte
+public enum DynamicEventRegistrationState : byte
 {
     NotRegistered = 0,
     Registered = 1,
@@ -67,10 +67,10 @@ public unsafe partial struct DynamicEvent
     [FieldOffset(0x58)] public int SecondsRemaining; // Counts down only once the battle has actually begun, otherwise 0 -- doesn't count down for CLL
     [FieldOffset(0x5C)] public short Duration; // Seems to always be 1200?
     [FieldOffset(0x60)] public ushort DynamicEventId; // Excel ID
-    [FieldOffset(0x63)] public DynamicEventStatus Status;
-    [FieldOffset(0x64)] public DynamicEventRegistrationStatus RegistrationStatus;
+    [FieldOffset(0x63)] public DynamicEventState State;
+    [FieldOffset(0x64)] public DynamicEventRegistrationState RegistrationState;
     [FieldOffset(0x65)] public byte NumCombatants;
-    [FieldOffset(0x66)] public byte ProgressPct; // 0-100
+    [FieldOffset(0x66)] public byte Progress; // 0-100
     [FieldOffset(0x68)] public Utf8String Name;
     [FieldOffset(0xD0)] public Utf8String Description;
     [FieldOffset(0x138)] public uint MapIconId;

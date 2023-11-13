@@ -80,6 +80,8 @@ public class ActiveFate
     public float MapY;
     public float ProgressPct;
 
+    public bool IsCE = false;
+
     // Fates may be started only after talking to an NPC, or have a brief intro sequence that plays out
     public bool Running = false;
 

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using BNpcName = Lumina.Excel.GeneratedSheets.BNpcName;
+using DynamicEvent = Lumina.Excel.GeneratedSheets.DynamicEvent;
 using Fate = Lumina.Excel.GeneratedSheets.Fate;
 using Map = Lumina.Excel.GeneratedSheets.Map;
 using TerritoryType = Lumina.Excel.GeneratedSheets.TerritoryType;
@@ -29,12 +30,15 @@ public class GameData
 
     private static Dictionary<uint, string> _bnpcNameIdToString = new();
     private static Dictionary<uint, string> _fateIdToString = new();
+    private static Dictionary<uint, string> _ceIdToString = new();
 
     // Debug
     internal static int BNpcNameCacheSize => _bnpcNameIdToString.Count;
     internal static int FateNameCacheSize => _fateIdToString.Count;
+    internal static int CENameCacheSize => _ceIdToString.Count;
     internal static Dictionary<uint, string> BNpcNameCache => _bnpcNameIdToString;
     internal static Dictionary<uint, string> FateNameCache => _fateIdToString;
+    internal static Dictionary<uint, string> CENameCache => _ceIdToString;
 
     public static bool IsEnglish;
     public static bool NameDataReady;
@@ -48,6 +52,7 @@ public class GameData
         Task.Run(() => {
             InitBNpcNameCache();
             InitFateNameCache();
+            InitCENameCache();
             NameDataReady = true;
         });
     }
@@ -150,12 +155,12 @@ public class GameData
 
         var huntNames = huntNamesList.ToArray();
 
-        foreach (var bnRow in bnpcNameExcel)
+        foreach (var row in bnpcNameExcel)
         {
             foreach (var (nameByteArray, nameString) in huntNames)
             {
-                if (fastStricmp(nameByteArray, bnRow.Singular.RawData))
-                    _bnpcNameIdToString.Add(bnRow.RowId, nameString);
+                if (fastStricmp(nameByteArray, row.Singular.RawData))
+                    _bnpcNameIdToString.Add(row.RowId, nameString);
             }
         }
     }
@@ -206,17 +211,34 @@ public class GameData
 
         var fateNames = fateNamesList.ToArray();
 
-        foreach (var bnRow in fateExcel)
+        foreach (var row in fateExcel)
         {
             foreach (var (nameByteArray, nameString) in fateNames)
             {
-                if (fastStricmp(nameByteArray, bnRow.Name.RawData))
-                    _fateIdToString.Add(bnRow.RowId, nameString);
+                if (fastStricmp(nameByteArray, row.Name.RawData))
+                    _fateIdToString.Add(row.RowId, nameString);
             }
         }
     }
 
-    // Returns the name of a known NPC given its NameID
+    // CE (bozja -- critical engagement) version of InitBnpcNameCache()
+    // Unlike monsters and fates, all data can be loaded as there's only 32 CEs
+    // See: GetCEName()
+    private static void InitCENameCache()
+    {
+        var ceExcel = DalamudService.DataManager.GetExcelSheet<DynamicEvent>(Dalamud.ClientLanguage.English);
+
+        if (ceExcel == null)
+            throw new System.Exception("CE data not available");
+
+        foreach (var row in ceExcel)
+        {
+            if (row.RowId != 0)
+                _ceIdToString.Add(row.RowId, row.Name);
+        }
+    }
+
+    // Returns the English name of a known NPC given its NameID
     // That is, one that appears somewhere inside of HuntData
     // For unknown IDs, returns null
     public static string? GetBNpcName(uint nameId)
@@ -225,7 +247,7 @@ public class GameData
         return name;
     }
 
-    // Returns the name of a known Fate given its NameID
+    // Returns the English name of a known Fate given its NameID
     // That is, one that appears somewhere inside of HuntData
     // Unlike GetBNpcName, unknown IDs will be resolved if possible
     public static string? GetFateName(uint fateId)
@@ -233,10 +255,17 @@ public class GameData
         _fateIdToString.TryGetValue(fateId, out var name);
         if (name == null)
         {
-            var fateExcel = DalamudService.DataManager.GetExcelSheet<Fate>();
+            var fateExcel = DalamudService.DataManager.GetExcelSheet<Fate>(Dalamud.ClientLanguage.English);
             var fateRow = fateExcel?.GetRow(fateId);
             name = fateRow?.Name?.ToString();
         }
+        return name;
+    }
+
+    // Returns the localized name of a CE given its DynamicEventID
+    public static string? GetCEName(uint dynamicEventId)
+    {
+        _ceIdToString.TryGetValue(dynamicEventId, out var name);
         return name;
     }
 

@@ -302,7 +302,8 @@ public class HuntScanner
                 Name = fate.Name,
                 EnglishName = fate.EnglishName,
                 Epic = HuntData.EpicFates.Contains(fate.EnglishName),
-                FirstSeenTimeUtc = HuntModel.UtcNow
+                FirstSeenTimeUtc = HuntModel.UtcNow,
+                IsCE = fate.IsCE
             };
             HuntModel.ActiveFates.TryAdd(fate.EnglishName, activeFate);
             UpdateActiveFate(activeFate, fate);

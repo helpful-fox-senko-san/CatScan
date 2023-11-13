@@ -17,6 +17,7 @@ public partial class MainWindow : Window, IDisposable
     private IDalamudTextureWrap? _iconS;
     private IDalamudTextureWrap? _iconF;
     private IDalamudTextureWrap? _iconStar;
+    private IDalamudTextureWrap? _iconCE;
 
     private Vector4 _textColorPulled = RGB(224, 96, 96);
     private Vector4 _textColorDead = RGB(160, 96, 96);
@@ -44,6 +45,10 @@ public partial class MainWindow : Window, IDisposable
 
         DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "Star.png")).ContinueWith(icon => {
             _iconStar = icon.Result;
+        });
+
+        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "CE.png")).ContinueWith(icon => {
+            _iconCE = icon.Result;
         });
     }
 
@@ -81,7 +86,11 @@ public partial class MainWindow : Window, IDisposable
     private void DrawEpicFateBar()
     {
         var epicFateList = new List<ActiveFate>(HuntModel.ActiveFates.Values);
-        epicFateList.RemoveAll((x) => !x.Epic);
+        epicFateList.RemoveAll((x) => !x.Epic && !x.IsCE);
+
+        // Don't want to highlight these
+        epicFateList.RemoveAll((x) => x.EnglishName == "The Battle of Castrum Lacus Litore");
+        epicFateList.RemoveAll((x) => x.EnglishName == "The Dalriada");
 
         epicFateList.Sort((ActiveFate a, ActiveFate b) => {
             return (int)(a.EndTimeUtc - b.EndTimeUtc).TotalSeconds;
@@ -96,7 +105,7 @@ public partial class MainWindow : Window, IDisposable
             using var pushFateTableAltBgColor = ImRaii.PushColor(ImGuiCol.TableRowBgAlt, RGB(112, 20, 112));
             using var pushColorFate1 = ImRaii.PushColor(ImGuiCol.HeaderHovered, RGB(128, 24, 128));
             using var pushColorFate2 = ImRaii.PushColor(ImGuiCol.HeaderActive, RGB(128, 24, 128));
-            using var fateTable = ImRaii.Table("FateTable", 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders);
+            using var fateTable = ImRaii.Table("EpicFateTable", 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders);
             ImGui.TableSetupColumn("fate", ImGuiTableColumnFlags.WidthStretch);
             foreach (var f in epicFateList)
             {
@@ -116,7 +125,15 @@ public partial class MainWindow : Window, IDisposable
                 if (ImGui.Selectable("##clickableFate:" + f.Name, false, ImGuiSelectableFlags.AllowItemOverlap))
                     GameFunctions.OpenMapLink(f.MapX, f.MapY);
                 ImGui.SameLine();
+                if (f.IsCE && _iconCE == null)
+                    str = $"[CE]  {str}";
                 ImGuiHelpers.CenteredText(str);
+                if (f.IsCE && _iconCE != null)
+                {
+                    ImGui.SameLine();
+                    ImGui.SetCursorPosX(20.0f);
+                    ImGui.Image(_iconCE.ImGuiHandle, new Vector2(16.0f, 16.0f));
+                }
             }
         }
     }
