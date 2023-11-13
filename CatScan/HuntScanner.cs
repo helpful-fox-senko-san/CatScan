@@ -251,6 +251,7 @@ public class HuntScanner
                 EnglishName = nm.NMName,
                 Missing = (activeFate.ProgressPct == 100.0f),
                 ObjectId = 0,
+                FirstSeenTimeUtc = HuntModel.UtcNow,
                 RawX = activeFate.RawX,
                 RawZ = activeFate.RawZ,
                 MapX = activeFate.MapX,
