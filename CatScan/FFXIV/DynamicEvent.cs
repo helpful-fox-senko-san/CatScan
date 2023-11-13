@@ -64,18 +64,15 @@ public unsafe partial struct DynamicEvent
     [FieldOffset(0x52)] public byte LargeScaleBattleId; // from Excel field (CLL=1, Dalriada=5)
     [FieldOffset(0x53)] public byte SingleBattleId; // from Excel field (references DynamicEventSingleBattle)
     [FieldOffset(0x54)] public int FinishTimeEpoch; // Updates at the start of each phase
-    [FieldOffset(0x58)] public int SecondsRemaining; // Counts down only once the battle has actually begun, otherwise 0 -- doesn't count down for CLL
+    [FieldOffset(0x58)] public int SecondsRemaining; // Counts down only once the battle has actually begun, otherwise 0 -- doesn't count down for CLL unless inside
     [FieldOffset(0x5C)] public short Duration; // Seems to always be 1200?
     [FieldOffset(0x60)] public ushort DynamicEventId; // Excel ID
     [FieldOffset(0x63)] public DynamicEventState State;
     [FieldOffset(0x64)] public DynamicEventRegistrationState RegistrationState;
     [FieldOffset(0x65)] public byte NumCombatants;
-    [FieldOffset(0x66)] public byte Progress; // 0-100
+    [FieldOffset(0x66)] public byte Progress; // 0-100 -- doesn't update for CLL unless inside
     [FieldOffset(0x68)] public Utf8String Name;
     [FieldOffset(0xD0)] public Utf8String Description;
     [FieldOffset(0x138)] public uint MapIconId;
     [FieldOffset(0x170)] public Vector3 Position;
-
-    public string NameString =>
-        Dalamud.Memory.MemoryHelper.ReadStringNullTerminated(((nint)Unsafe.AsPointer(ref this)) + 0x92);
 }

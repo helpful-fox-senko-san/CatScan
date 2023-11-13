@@ -816,27 +816,30 @@ public class GameScanner : IDisposable
                 // Mark existing fate as being seen
                 cachedFate.OffscreenTimeMS = 0.0f;
 
+                var endTime = System.DateTimeOffset.FromUnixTimeSeconds(ce->FinishTimeEpoch).UtcDateTime;
+
                 if (cachedFate.State != state)
                 {
-                    var endTime = ce->FinishTimeEpoch;
                     cachedFate.State = state;
-                    cachedFate.EndTimeUtc = System.DateTimeOffset.FromUnixTimeSeconds(endTime).UtcDateTime;
                     dirty = true;
                 }
 
-                if (state != FateState.Preparation)
+                var pct = (float)ce->Progress;
+
+                // Game inconsistently/accidentally sends information about progress
+                if (ce->LargeScaleBattleId != 0 && dynamicEventManager->CurrentEventIdx != i && pct != 100.0f)
+                    pct = 0.0f;
+
+                if (float.Abs(cachedFate.ProgressPct - pct) >= 0.1f)
                 {
-                    var pct = (float)ce->Progress;
+                    cachedFate.ProgressPct = pct;
+                    dirty = true;
+                }
 
-                    // Game inconsistently/accidentally sends information about progress
-                    if (ce->LargeScaleBattleId != 0 && dynamicEventManager->CurrentEventIdx != i && pct != 100.0f)
-                        pct = 0.0f;
-
-                    if (float.Abs(cachedFate.ProgressPct - pct) >= 0.1f)
-                    {
-                        cachedFate.ProgressPct = pct;
-                        dirty = true;
-                    }
+                if (endTime != cachedFate.EndTimeUtc)
+                {
+                    cachedFate.EndTimeUtc = endTime;
+                    dirty = true;
                 }
 
                 if (dirty)
