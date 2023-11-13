@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using CatScan.FFXIV;
 
 namespace CatScan;
 
@@ -73,6 +74,7 @@ public class GameEnemy
 
 public class GameFate
 {
+    public virtual bool IsCE => false;
     public uint FateId;
     public string Name => GetName();
     public string EnglishName => GetEnglishName();
@@ -86,11 +88,11 @@ public class GameFate
     // Milliseconds since the fate was last seen in the fate table
     public double OffscreenTimeMS = 0.0;
 
-    // XXX: This is public -- non-English clients set this to the NPC's rendered name
+    // XXX: This is public -- non-English clients set this to the FATE's rendered name
     public string? _cachedName;
     private string? _cachedEnglishName;
 
-    private string GetName()
+    protected virtual string GetName()
     {
         if (_cachedName != null)
             return _cachedName;
@@ -99,7 +101,7 @@ public class GameFate
         return GetEnglishName();
     }
 
-    private string GetEnglishName()
+    protected virtual string GetEnglishName()
     {
         if (_cachedEnglishName != null)
             return _cachedEnglishName;
@@ -113,11 +115,34 @@ public class GameFate
     }
 }
 
+// CEs operate pretty much the same way as fates, so they present using the same interface
+public class GameCE : GameFate
+{
+    public override bool IsCE => true;
+    public uint DynamicEventId;
+
+    private string? _cachedEnglishName;
+
+    protected override string GetEnglishName()
+    {
+        if (_cachedEnglishName != null)
+            return _cachedEnglishName;
+
+        _cachedEnglishName = GameData.GetCEName(DynamicEventId) ?? $"#{DynamicEventId}";
+
+        if (GameData.IsEnglish)
+            _cachedName = _cachedEnglishName;
+
+        return _cachedEnglishName;
+    }
+}
+
 // Scans the game state for the current zone and visible enemies
 public class GameScanner : IDisposable
 {
     private readonly Dictionary<uint, GameEnemy> _enemyCache = new();
     private readonly Dictionary<uint, GameFate> _fateCache = new();
+    private readonly Dictionary<uint, GameCE> _ceCache = new();
     private readonly HashSet<uint> _lostIds = new();
 
     // These events are picked up by HuntScanner and processed in to logical events of its own
@@ -733,7 +758,7 @@ public class GameScanner : IDisposable
             }
         }
 
-        // Scan the enemy cache for off-screen enemies to mark as lost
+        // Scan the fate cache for missing fates to consider finished
         foreach (var entry in _fateCache)
         {
             var cachedFate = entry.Value;
@@ -746,6 +771,98 @@ public class GameScanner : IDisposable
                 _fateCache.Remove(entry.Key);
                 EmitLostFate(cachedFate);
                 break;
+            }
+        }
+    }
+
+    // Called in Framework thread while zone ID is complete and scanning is enabled
+    private unsafe void ScanCETick()
+    {
+        var dynamicEventManager = DynamicEventManager.GetDynamicEventManager();
+
+        // Not in Bozja/Zadnor
+        if (dynamicEventManager == null)
+            return;
+
+        _stats.FateTableRows += DynamicEventManager.TableSize;
+
+        for (int i = 0; i < DynamicEventManager.TableSize; ++i)
+        {
+            var ce = dynamicEventManager->GetEvent(i);
+            var id = ce->DynamicEventId;
+            var ceState = ce->State;
+            var state = ceState switch {
+                DynamicEventState.NotActive => FateState.Ended,
+                DynamicEventState.BattleUnderway => FateState.Running,
+                _ => FateState.Preparation,
+            };
+
+            if (ce->Progress == 100)
+                state = FateState.Ended;
+
+            if (_fateCache.TryGetValue(id, out var cachedFate))
+            {
+                var dirty = false;
+
+                if (state == FateState.Ended)
+                {
+                    cachedFate.State = FateState.Ended;
+                    cachedFate.ProgressPct = 100.0f;
+                    _fateCache.Remove(id);
+                    EmitLostFate(cachedFate);
+                    continue;
+                }
+
+                // Mark existing fate as being seen
+                cachedFate.OffscreenTimeMS = 0.0f;
+
+                if (cachedFate.State != state)
+                {
+                    var endTime = ce->FinishTimeEpoch;
+                    cachedFate.State = state;
+                    cachedFate.EndTimeUtc = System.DateTimeOffset.FromUnixTimeSeconds(endTime).UtcDateTime;
+                    dirty = true;
+                }
+
+                if (state != FateState.Preparation)
+                {
+                    var pct = (float)ce->Progress;
+
+                    // Game inconsistently/accidentally sends information about progress
+                    if (ce->LargeScaleBattleId != 0 && dynamicEventManager->CurrentEventIdx != i && pct != 100.0f)
+                        pct = 0.0f;
+
+                    if (float.Abs(cachedFate.ProgressPct - pct) >= 0.1f)
+                    {
+                        cachedFate.ProgressPct = pct;
+                        dirty = true;
+                    }
+                }
+
+                if (dirty)
+                    EmitFate(cachedFate);
+            }
+            else
+            {
+                if (state == FateState.WaitingForEnd || state == FateState.Ended)
+                    continue;
+
+                var endTime = ce->FinishTimeEpoch;
+                var pos = ce->Position;
+
+                cachedFate = new GameCE(){
+                    FateId = 0,
+                    DynamicEventId = id,
+                    _cachedName = GameData.IsEnglish ? null : ce->Name.ToString(),
+                    X = pos.X,
+                    Z = pos.Z,
+                    EndTimeUtc = state == FateState.Preparation ? null : System.DateTimeOffset.FromUnixTimeSeconds(endTime).UtcDateTime,
+                    State = state
+                };
+                ++_stats.GameStringReads;
+
+                _fateCache.Add(id, cachedFate);
+                EmitFate(cachedFate);
             }
         }
     }
@@ -815,6 +932,7 @@ public class GameScanner : IDisposable
             _deltaMs = 100.0;
 
         ScanTick();
+        ScanCETick();
         ScanFateTick();
 
         _deltaMs = 0.0;

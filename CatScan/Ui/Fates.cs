@@ -96,6 +96,14 @@ public partial class MainWindow : Window, IDisposable
 
             if (ImGui.Selectable("##clickableFate:" + f.Name, false, ImGuiSelectableFlags.AllowItemOverlap))
                 GameFunctions.OpenMapLink(f.MapX, f.MapY);
+            if (f.IsCE)
+            {
+                ImGui.SameLine();
+                if (_iconCE != null)
+                    ImGui.Image(_iconCE.ImGuiHandle, new Vector2(16.0f, 16.0f));
+                else
+                    ImGui.Text("[CE]");
+            }
             ImGui.SameLine();
             ImGui.Text(f.Name);
             if (f.ProgressPct > 0.0f)
