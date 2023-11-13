@@ -151,21 +151,4 @@ public static partial class HuntData
         "The Battle of Castrum Lacus Litore",
         "The Dalriada"
     };
-/*
-
-            KC("4th Legion "),
-            KC("4th Legion "),
-            KC("4th Legion "),
-            KC("4th Legion "),
-
-            KC("4th Legion "),
-            KC("4th Legion "),
-            KC("4th Legion "),
-            KC("4th Legion "),
-
-            KC("4th Legion "),
-            KC("4th Legion Cavalry"),
-            KC("4th Legion Roader"),
-            KC("4th Legion Rearguard")
-*/
 }

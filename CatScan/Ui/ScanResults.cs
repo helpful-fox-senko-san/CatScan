@@ -88,9 +88,8 @@ public partial class MainWindow : Window, IDisposable
         var epicFateList = new List<ActiveFate>(HuntModel.ActiveFates.Values);
         epicFateList.RemoveAll((x) => !x.Epic && !x.IsCE);
 
-        // Don't want to highlight these
-        epicFateList.RemoveAll((x) => x.EnglishName == "The Battle of Castrum Lacus Litore");
-        epicFateList.RemoveAll((x) => x.EnglishName == "The Dalriada");
+        // Don't want to highlight CLL/Dalriada
+        epicFateList.RemoveAll((x) => HuntData.LargeScaleBattles.Contains(x.EnglishName));
 
         epicFateList.Sort((ActiveFate a, ActiveFate b) => {
             return (int)(a.EndTimeUtc - b.EndTimeUtc).TotalSeconds;

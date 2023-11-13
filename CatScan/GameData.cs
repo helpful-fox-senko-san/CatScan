@@ -262,7 +262,7 @@ public class GameData
         return name;
     }
 
-    // Returns the localized name of a CE given its DynamicEventID
+    // Returns the English name of a CE given its DynamicEventID
     public static string? GetCEName(uint dynamicEventId)
     {
         _ceIdToString.TryGetValue(dynamicEventId, out var name);
