@@ -48,6 +48,25 @@ public class HuntScanner
         return ((41.0f / scale) * ((raw + 1024.0f) / 2048.0f)) + 1.0f - offset;
     }
 
+    // Multiple enemies with the same name can appear in the same zone that need to be ignored
+    // This could have been avoided by using IDs from the start but oh well
+    private static bool VerifyEnemyID(GameEnemy enemy)
+    {
+        return enemy.NameId switch {
+            // Zadnor: 4th Legion Death Machine (correct ID: 10138)
+            9940 => false,
+            // Zadnor: 4th Legion Satellite (correct ID: 10145)
+            9939 => false,
+            10000 => false,
+            // Zadnor: 4th Legion Infantry (correct ID: 10124)
+            9938 => false,
+            9995 => false,
+            10211 => false,
+            // Assume everything else is OK
+            _ => true
+        };
+    }
+
     // Clear kill count data after an S rank is killed
     // It could be cleared when it spawns instead, but you may want some time to see the final count
     private void KilledS(string englishName)
@@ -151,6 +170,10 @@ public class HuntScanner
     private void OnNewEnemy(GameEnemy enemy)
     {
         using var modelLock = HuntModel.Lock();
+
+        // Ignore enemies where the IDs indicate that it isn't the enemy we want
+        if (!VerifyEnemyID(enemy))
+            return;
 
         foreach (var mark in HuntModel.Territory.ZoneData.Marks)
         {
