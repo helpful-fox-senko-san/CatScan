@@ -244,7 +244,7 @@ public static partial class HuntData
         )},
 
     // -- Endwalker
-        {956, EW_Zone("Labrynthos",
+        {956, EW_Zone("Labyrinthos",
             B("Ü-u-ü-u"), B("Green Archon"), A("Hulder"), A("Storsie"), S("Burfurlur the Canny")
         )},
         {957, EW_Zone("Thavnair", 3,
@@ -254,7 +254,7 @@ public static partial class HuntData
         {958, EW_Zone("Garlemald",
             B("Emperor's Rose"), B("Warmonger"), A("Minerva"), A("Aegeiros"), S("Armstrong")
         )},
-        {959, EW_Zone("Mare Lamentorium",
+        {959, EW_Zone("Mare Lamentorum",
             B("Genesis Rock"), B("Daphnia Magna"), A("Lunatender Queen"), A("Mousse Princess"), S("Ruminator"),
             KC("Thinker"), KC("Wanderer"), KC("Weeper")
         )},
