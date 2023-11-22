@@ -43,11 +43,25 @@ public partial class MainWindow : Window, IDisposable
 
         var playerPos = DalamudService.ClientState.LocalPlayer?.Position ?? Vector3.Zero;
 
-        using var table = ImRaii.Table("FateTable", 3, ImGuiTableFlags.Reorderable | ImGuiTableFlags.Resizable | ImGuiTableFlags.Borders | ImGuiTableFlags.Sortable);
-        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("Dist.", ImGuiTableColumnFlags.WidthFixed);
+        using var table = ImRaii.Table("FateTable", 4, ImGuiTableFlags.Reorderable | ImGuiTableFlags.Resizable | ImGuiTableFlags.Borders | ImGuiTableFlags.Sortable | ImGuiTableFlags.Hideable);
+        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.NoHide);
+        ImGui.TableSetupColumn("%", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide);
+        ImGui.TableSetupColumn("Dist.", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultHide);
         ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultSort);
-        ImGui.TableHeadersRow();
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        ImGui.TableHeader("Name");
+        ImGui.TableNextColumn();
+        ImGui.TableHeader("%");
+        if (ImGui.IsItemHovered())
+        {
+            using var tt = ImRaii.Tooltip();
+            ImGui.Text("Progress %%");
+        }
+        ImGui.TableNextColumn();
+        ImGui.TableHeader("Dist.");
+        ImGui.TableNextColumn();
+        ImGui.TableHeader("Time");
         var calcDist2 = (ActiveFate f) => {
             var dx = System.Math.Abs(playerPos.X - f.RawX);
             var dz = System.Math.Abs(playerPos.Z - f.RawZ);
@@ -64,17 +78,26 @@ public partial class MainWindow : Window, IDisposable
         else if (tableSortSpecs.Specs.ColumnIndex == 1)
         {
             if (tableSortSpecs.Specs.SortDirection != ImGuiSortDirection.Descending)
+                fateList.Sort((ActiveFate a, ActiveFate b) => a.ProgressPct.CompareTo(b.ProgressPct));
+            else
+                fateList.Sort((ActiveFate a, ActiveFate b) => b.ProgressPct.CompareTo(a.ProgressPct));
+
+        }
+        else if (tableSortSpecs.Specs.ColumnIndex == 2)
+        {
+            if (tableSortSpecs.Specs.SortDirection != ImGuiSortDirection.Descending)
                 fateList.Sort((ActiveFate a, ActiveFate b) => calcDist2(a).CompareTo(calcDist2(b)));
             else
                 fateList.Sort((ActiveFate a, ActiveFate b) => calcDist2(b).CompareTo(calcDist2(a)));
 
         }
-        else if (tableSortSpecs.Specs.ColumnIndex == 2)
+        else if (tableSortSpecs.Specs.ColumnIndex == 3)
         {
             if (tableSortSpecs.Specs.SortDirection == ImGuiSortDirection.Descending)
                 fateList.Reverse();
         }
 
+        bool pctVisible = ImGui.TableGetColumnFlags(1).HasFlag(ImGuiTableColumnFlags.IsVisible);
         foreach (var f in fateList)
         {
             var str = f.Name;
@@ -106,11 +129,30 @@ public partial class MainWindow : Window, IDisposable
             }
             ImGui.SameLine();
             ImGui.Text(f.Name);
+
+            if (pctVisible)
+                ImGui.TableNextColumn();
+
             if (f.ProgressPct > 0.0f)
             {
-                ImGui.SameLine();
-                ImGui.Text(f.ProgressPct.ToString("\\(0.\\%\\%\\)"));
+                if (pctVisible)
+                {
+                    ImGui.Text(f.ProgressPct.ToString("0.\\%\\%"));
+                }
+                else
+                {
+                    ImGui.SameLine();
+                    ImGui.Text(f.ProgressPct.ToString("\\(0.\\%\\%\\)"));
+                }
             }
+            else
+            {
+                if (pctVisible)
+                    ImGui.Text("0%%");
+            }
+
+            if (!pctVisible)
+                ImGui.TableNextColumn();
 
             // XXX: This isn't exactly correct and doesn't factor in height but noone will notice right
             var dist = System.Math.Sqrt(calcDist2(f));
