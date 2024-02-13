@@ -247,7 +247,7 @@ public static partial class HuntData
         {956, EW_Zone("Labyrinthos",
             B("Ü-u-ü-u"), B("Green Archon"), A("Hulder"), A("Storsie"), S("Burfurlur the Canny")
         )},
-        {957, EW_Zone("Thavnair", 3,
+        {957, EW_Zone("Thavnair",
             B("Iravati"), B("Vajrakumara"), A("Yilan"), A("Sugriva"), S("Sphatika"), FATE("Daivadipa"),
             KC("Vajralangula"), KC("Pisaca"), KC("Asvattha")
         )},
