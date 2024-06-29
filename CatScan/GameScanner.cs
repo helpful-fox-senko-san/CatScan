@@ -371,7 +371,7 @@ public class GameScanner : IDisposable
             return;
         }
 
-        _instance = uistate->AreaInstance.Instance;
+        _instance = (int)uistate->PublicInstance.InstanceId;
 
         if (_instance < 0 || _instance > 9)
         {
@@ -478,7 +478,7 @@ public class GameScanner : IDisposable
 
     // Called by ScanTick in Framework thread
     // Creates a cache entry for a battle NPC, (optionally) emits a NewEnemy event, and returns the cache entry
-    private GameEnemy DoNewEnemy(BattleNpc bnpc, uint id, bool wasLost = false)
+    private GameEnemy DoNewEnemy(IBattleNpc bnpc, uint id, bool wasLost = false)
     {
         // New enemy
         var pos = bnpc.Position;
@@ -510,7 +510,7 @@ public class GameScanner : IDisposable
     // Called by ScanTick in Framework thread
     // Updates or re-creates a cache entry from a battle NPC, (optionally) emits an UpdatedEnemy event, and returns the cache entry
     // The enemy parameter may be null, in which case DoNewEnemy() is called to insert a new cache entry
-    private GameEnemy DoUpdateEnemy(BattleNpc bnpc, uint id, GameEnemy? cachedEnemy)
+    private GameEnemy DoUpdateEnemy(IBattleNpc bnpc, uint id, GameEnemy? cachedEnemy)
     {
         var dirty = false;
 
@@ -615,12 +615,12 @@ public class GameScanner : IDisposable
             if (obj == null)
                 continue;
 
-            var bnpc = (obj as BattleNpc);
+            var bnpc = (obj as IBattleNpc);
 
             if (bnpc == null || bnpc.BattleNpcKind != BattleNpcSubKind.Enemy)
                 continue;
 
-            var id = obj.ObjectId;
+            var id = obj.EntityId;
 
             if (_enemyCache.TryGetValue(id, out var cachedEnemy))
             {

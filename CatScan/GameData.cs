@@ -45,7 +45,7 @@ public class GameData
 
     public static void Initialize()
     {
-        IsEnglish = (DalamudService.ClientState.ClientLanguage == Dalamud.ClientLanguage.English);
+        IsEnglish = (DalamudService.ClientState.ClientLanguage == Dalamud.Game.ClientLanguage.English);
 
         InitTerritoryData();
 
@@ -113,7 +113,7 @@ public class GameData
     // See: GetBnpcName()
     private static void InitBNpcNameCache()
     {
-        var bnpcNameExcel = DalamudService.DataManager.GetExcelSheet<BNpcName>(Dalamud.ClientLanguage.English);
+        var bnpcNameExcel = DalamudService.DataManager.GetExcelSheet<BNpcName>(Dalamud.Game.ClientLanguage.English);
 
         if (bnpcNameExcel == null)
             throw new System.Exception("BNpcName data not available");
@@ -169,7 +169,7 @@ public class GameData
     // See: GetFateName()
     private static void InitFateNameCache()
     {
-        var fateExcel = DalamudService.DataManager.GetExcelSheet<Fate>(Dalamud.ClientLanguage.English);
+        var fateExcel = DalamudService.DataManager.GetExcelSheet<Fate>(Dalamud.Game.ClientLanguage.English);
 
         if (fateExcel == null)
             throw new System.Exception("Fate data not available");
@@ -226,7 +226,7 @@ public class GameData
     // See: GetCEName()
     private static void InitCENameCache()
     {
-        var ceExcel = DalamudService.DataManager.GetExcelSheet<DynamicEvent>(Dalamud.ClientLanguage.English);
+        var ceExcel = DalamudService.DataManager.GetExcelSheet<DynamicEvent>(Dalamud.Game.ClientLanguage.English);
 
         if (ceExcel == null)
             throw new System.Exception("CE data not available");
@@ -255,7 +255,7 @@ public class GameData
         _fateIdToString.TryGetValue(fateId, out var name);
         if (name == null)
         {
-            var fateExcel = DalamudService.DataManager.GetExcelSheet<Fate>(Dalamud.ClientLanguage.English);
+            var fateExcel = DalamudService.DataManager.GetExcelSheet<Fate>(Dalamud.Game.ClientLanguage.English);
             var fateRow = fateExcel?.GetRow(fateId);
             name = fateRow?.Name?.ToString();
         }

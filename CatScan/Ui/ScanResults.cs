@@ -1,6 +1,6 @@
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Utility;
-using Dalamud.Interface.Internal; // for IDalamudTextureWrap
+using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using System;
@@ -12,12 +12,12 @@ namespace CatScan.Ui;
 
 public partial class MainWindow : Window, IDisposable
 {
-    private IDalamudTextureWrap? _iconB;
-    private IDalamudTextureWrap? _iconA;
-    private IDalamudTextureWrap? _iconS;
-    private IDalamudTextureWrap? _iconF;
-    private IDalamudTextureWrap? _iconStar;
-    private IDalamudTextureWrap? _iconCE;
+    private ISharedImmediateTexture _iconB;
+    private ISharedImmediateTexture _iconA;
+    private ISharedImmediateTexture _iconS;
+    private ISharedImmediateTexture _iconF;
+    private ISharedImmediateTexture _iconStar;
+    private ISharedImmediateTexture _iconCE;
 
     private Vector4 _textColorPulled = RGB(224, 96, 96);
     private Vector4 _textColorDead = RGB(160, 96, 96);
@@ -27,29 +27,12 @@ public partial class MainWindow : Window, IDisposable
 
     private void InitScanResults()
     {
-        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "B.png")).ContinueWith(icon => {
-            _iconB = icon.Result;
-        });
-
-        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "A.png")).ContinueWith(icon => {
-            _iconA = icon.Result;
-        });
-
-        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "S.png")).ContinueWith(icon => {
-            _iconS = icon.Result;
-        });
-
-        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "F.png")).ContinueWith(icon => {
-            _iconF = icon.Result;
-        });
-
-        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "Star.png")).ContinueWith(icon => {
-            _iconStar = icon.Result;
-        });
-
-        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "CE.png")).ContinueWith(icon => {
-            _iconCE = icon.Result;
-        });
+        _iconB = DalamudService.TextureProvider.GetFromFile(Path.Combine(_resourcePath, "B.png"));
+        _iconA = DalamudService.TextureProvider.GetFromFile(Path.Combine(_resourcePath, "A.png"));
+        _iconS = DalamudService.TextureProvider.GetFromFile(Path.Combine(_resourcePath, "S.png"));
+        _iconF = DalamudService.TextureProvider.GetFromFile(Path.Combine(_resourcePath, "F.png"));
+        _iconStar = DalamudService.TextureProvider.GetFromFile(Path.Combine(_resourcePath, "Star.png"));
+        _iconCE = DalamudService.TextureProvider.GetFromFile(Path.Combine(_resourcePath, "CE.png"));
     }
 
     private void DrawRankIcon(Rank rank)
@@ -78,7 +61,7 @@ public partial class MainWindow : Window, IDisposable
             icon = _iconStar;
 
         if (icon != null)
-            ImGui.Image(icon.ImGuiHandle, new(24, 24));
+            ImGui.Image(icon.GetWrapOrEmpty().ImGuiHandle, new(24, 24));
         else
             ImGui.Text("");
     }
@@ -131,7 +114,7 @@ public partial class MainWindow : Window, IDisposable
                 {
                     ImGui.SameLine();
                     ImGui.SetCursorPosX(20.0f);
-                    ImGui.Image(_iconCE.ImGuiHandle, new Vector2(16.0f, 16.0f));
+                    ImGui.Image(_iconCE.GetWrapOrEmpty().ImGuiHandle, new Vector2(16.0f, 16.0f));
                 }
             }
         }

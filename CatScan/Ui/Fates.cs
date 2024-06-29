@@ -123,7 +123,7 @@ public partial class MainWindow : Window, IDisposable
             {
                 ImGui.SameLine();
                 if (_iconCE != null)
-                    ImGui.Image(_iconCE.ImGuiHandle, new Vector2(16.0f, 16.0f));
+                    ImGui.Image(_iconCE.GetWrapOrEmpty().ImGuiHandle, new Vector2(16.0f, 16.0f));
                 else
                     ImGui.Text("[CE]");
             }

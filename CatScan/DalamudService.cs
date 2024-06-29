@@ -5,7 +5,7 @@ using Dalamud.Plugin.Services;
 
 public class DalamudService
 {
-    [PluginService] public static DalamudPluginInterface PluginInterface { get; set; } = null!;
+    [PluginService] public static IDalamudPluginInterface PluginInterface { get; set; } = null!;
     [PluginService] public static IClientState ClientState { get; private set; } = null!;
     [PluginService] public static ICondition Condition { get; private set; } = null!;
     [PluginService] public static ICommandManager CommandManager { get; private set; } = null!;
@@ -16,8 +16,9 @@ public class DalamudService
     [PluginService] public static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] public static IPluginLog Log { get; private set; } = null!;
     [PluginService] public static ISigScanner SigScanner { get; private set; } = null!;
+    [PluginService] public static ITextureProvider TextureProvider { get; private set; } = null!;
 
-    public static void Initialize(DalamudPluginInterface pluginInterface)
+    public static void Initialize(IDalamudPluginInterface pluginInterface)
     {
         pluginInterface.Create<DalamudService>();
     }

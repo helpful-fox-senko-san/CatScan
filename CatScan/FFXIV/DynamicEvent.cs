@@ -1,6 +1,6 @@
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using FFXIVClientStructs.Interop.Attributes;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Common.Math;
 
@@ -26,7 +26,8 @@ public enum DynamicEventRegistrationState : byte
 public unsafe partial struct DynamicEventManager
 {
     public const int TableSize = 16;
-    [FixedSizeArray<DynamicEvent>(TableSize)]
+    // FIXME:
+    //[FixedSizeArray<DynamicEvent>(TableSize)]
     [FieldOffset(0x8)] public fixed byte Events[0x1B0 * TableSize];
     [FieldOffset(0x1B26)] public sbyte CurrentEventIdx; // -1 or index of registered/deployed DynamicEvent
 
@@ -35,15 +36,29 @@ public unsafe partial struct DynamicEventManager
 
     private delegate DynamicEventManager* GetDynamicEventManagerDelegate();
     private static GetDynamicEventManagerDelegate? _getTableFn = null;
+    private static int _getTableScanFails = 0;
 
     public static unsafe DynamicEventManager* GetDynamicEventManager()
     {
         if (_getTableFn == null)
         {
-            var addr = DalamudService.SigScanner.ScanText("E8 ?? ?? ?? ?? 45 32 C9 4C 8B D0");
+            // Give up its not working!
+            if (_getTableScanFails > 100)
+                return null;
+
+            nint addr = 0;
+
+            try
+            {
+                addr = DalamudService.SigScanner.ScanText("E8 ?? ?? ?? ?? 45 32 C9 4C 8B D0");
+            }
+            catch (Exception) { }
 
             if (addr == 0)
+            {
+                ++_getTableScanFails;
                 return null;
+            }
 
             _getTableFn = Marshal.GetDelegateForFunctionPointer<GetDynamicEventManagerDelegate>(addr);
         }

@@ -8,7 +8,7 @@
     <Version>0.8.1.0</Version>
     <Description></Description>
     <Copyright></Copyright>
-    <PackageProjectUrl>https://github.com/syldrathecat/CatScan</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/helpful-fox-senko-san/CatScan</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
   </PropertyGroup>

@@ -1,5 +1,5 @@
 using Dalamud.Interface.Windowing;
-using Dalamud.Interface.Internal; // for IDalamudTextureWrap
+using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using System;
@@ -11,9 +11,9 @@ namespace CatScan.Ui;
 
 public partial class MainWindow : Window, IDisposable
 {
-    private IDalamudTextureWrap? _iconGrey;
-    private IDalamudTextureWrap? _iconGreen;
-    private IDalamudTextureWrap? _iconRed;
+    private ISharedImmediateTexture _iconGrey;
+    private ISharedImmediateTexture _iconGreen;
+    private ISharedImmediateTexture _iconRed;
 
     private class TrainLogMark
     {
@@ -62,17 +62,9 @@ public partial class MainWindow : Window, IDisposable
 
     private void InitTrainLog()
     {
-        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "Grey.png")).ContinueWith(icon => {
-            _iconGrey = icon.Result;
-        });
-
-        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "Green.png")).ContinueWith(icon => {
-            _iconGreen = icon.Result;
-        });
-
-        DalamudService.PluginInterface.UiBuilder.LoadImageAsync(Path.Combine(_resourcePath, "Red.png")).ContinueWith(icon => {
-            _iconRed = icon.Result;
-        });
+        _iconGrey = DalamudService.TextureProvider.GetFromFile(Path.Combine(_resourcePath, "Grey.png"));
+        _iconGreen = DalamudService.TextureProvider.GetFromFile(Path.Combine(_resourcePath, "Green.png"));
+        _iconRed = DalamudService.TextureProvider.GetFromFile(Path.Combine(_resourcePath, "Red.png"));
 
         var getExpansionZoneIds = (Expansion ex) => {
             List<int> zoneIds = new();
@@ -328,7 +320,7 @@ public partial class MainWindow : Window, IDisposable
 
             if (icon != null)
             {
-                ImGui.Image(icon.ImGuiHandle, new(16, 16));
+                ImGui.Image(icon.GetWrapOrEmpty().ImGuiHandle, new(16, 16));
                 ImGui.SameLine();
             }
 

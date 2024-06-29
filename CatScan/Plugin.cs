@@ -21,7 +21,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public static bool BetweenAreas => _gameScanner.BetweenAreas || _gameScanner.BetweenZones;
 
-    public Plugin(DalamudPluginInterface pluginInterface)
+    public Plugin(IDalamudPluginInterface pluginInterface)
     {
         DalamudService.Initialize(pluginInterface);
         GameData.Initialize();
