@@ -116,6 +116,7 @@ public partial class MainWindow : Window, IDisposable
         addTrain(Expansion.SB, "Stormblood", HuntData.ZoneOrderSB);
         addTrain(Expansion.ShB, "Shadowbringers", HuntData.ZoneOrderShB);
         addTrain(Expansion.EW, "Endwalker", HuntData.ZoneOrderEW);
+        addTrain(Expansion.DT, "Dawntrail", HuntData.ZoneOrderDT);
 
         _selectedTrainIndex = _trainLogExpansions.Count - 1;
         _selectedTrain = _trainLogExpansions[_selectedTrainIndex];

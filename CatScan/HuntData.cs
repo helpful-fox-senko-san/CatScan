@@ -10,6 +10,7 @@ public enum Expansion
     SB,
     ShB,
     EW,
+    DT,
     Eureka,
     Bozja
 }
@@ -100,6 +101,16 @@ public static partial class HuntData
         return new Zone(Expansion.EW, name, instances, m2);
     }
 
+    // Add SS rank for all Dawntrail zones ... when it comes out!
+    private static Zone DT_Zone(string name, int instances, params Mark[] marks)
+    {
+        var m2 = new Mark[marks.Length + 2];
+        System.Array.Copy(marks, m2, marks.Length);
+        m2[marks.Length] = SS("Arch Aethereater");
+        m2[marks.Length + 1] = Minion("Crystal Incarnation");
+        return new Zone(Expansion.DT, name, instances, m2);
+    }
+
     private static Zone Eureka_Zone(string name, params Mark[] marks)
     {
         return new Zone(Expansion.Eureka, name, 9, marks);
@@ -116,6 +127,7 @@ public static partial class HuntData
     private static Zone SB_Zone(string name, params Mark[] marks) { return SB_Zone(name, 1, marks); }
     private static Zone ShB_Zone(string name, params Mark[] marks) { return ShB_Zone(name, 1, marks); }
     private static Zone EW_Zone(string name, params Mark[] marks) { return EW_Zone(name, 1, marks); }
+    private static Zone DT_Zone(string name, params Mark[] marks) { return DT_Zone(name, 1, marks); }
 
     public readonly static Dictionary<int, Zone> Zones = new Dictionary<int, Zone>{
 
@@ -265,6 +277,26 @@ public static partial class HuntData
             B("Shockmaw"), B("Yumcax"), A("Petalodus"), A("Gurangatch"), S("Ophioneus")
         )},
 
+    // -- Dawntrail
+        {1187, DT_Zone("Urqopacha", 6,
+            B("Mad Maguey"), B("Chupacabra"), A("Nechuciho"), A("Queen Hawk") // S rank TBA
+        )},
+        {1188, DT_Zone("Kozama'uka", 6,
+            B("The Slammer"), B("Go'ozoabek'be"), A("Pkuucha"), A("The Raintriller") // S rank TBA
+        )},
+        {1189, DT_Zone("Yak T'el", 3,
+            B("Leafsource Hadoll Ja"), B("Xty'iinbek"), A("Starcrier"), A("Rrax Yity'a"), S("Neyoozoteel")
+        )},
+        {1190, DT_Zone("Shaaloani", 3,
+            B("Nopalitender Fabuloso"), B("Uktena"), A("Yehehetoaua'pyo"), A("Keheniheyamewi"), S("Sansheya"), FATE("Ttokrrone")
+        )},
+        {1191, DT_Zone("Heritage Found", 3,
+            B("Gallowsbeak"), B("Gargant"), A("Heshuala"), A("Urna Variabilis"), S("Atticus the Primogenitor")
+        )},
+        {1192, DT_Zone("Living Memory", 3,
+            B("Jewel Bearer"), B("13th Child"), A("Sally the Sweeper"), A("Cat's Eye"), S("The Forecaster"), FATE("Mica the Magical Mu")
+        )},
+
     // -- Eureka
         {732, Eureka_Zone("Eureka Anemos",
             S("Sabotender Corrido"), S("The Lord of Anemos"), S("Teles"),
@@ -397,6 +429,8 @@ public static partial class HuntData
         "A Finale Most Formidable",
         "Devout Pilgrims vs. Daivadipa",
         "Omicron Recall: Killing Order",
+        "The Serpentlord Seethes",
+        "Mascot Murder",
 
         // Should the Eureka NM fates all be added here too?
         // Support fate needs to be added at least, since it spawns with no boss
@@ -457,5 +491,9 @@ public static partial class HuntData
 
     public readonly static int[] ZoneOrderEW = new int[]{
         957, 958, 956, 959, 961, 960
+    };
+
+    public readonly static int[] ZoneOrderDT = new int[]{
+        1187, 1188, 1189, 1190, 1191, 1192
     };
 }
