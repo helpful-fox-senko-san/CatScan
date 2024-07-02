@@ -26,8 +26,6 @@ public enum DynamicEventRegistrationState : byte
 public unsafe partial struct DynamicEventManager
 {
     public const int TableSize = 16;
-    // FIXME:
-    //[FixedSizeArray<DynamicEvent>(TableSize)]
     [FieldOffset(0x8)] public fixed byte Events[0x1B0 * TableSize];
     [FieldOffset(0x1B26)] public sbyte CurrentEventIdx; // -1 or index of registered/deployed DynamicEvent
 
@@ -50,7 +48,7 @@ public unsafe partial struct DynamicEventManager
 
             try
             {
-                addr = DalamudService.SigScanner.ScanText("E8 ?? ?? ?? ?? 45 32 C9 4C 8B D0");
+                addr = DalamudService.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 89 45 8F 4C 8B E8");
             }
             catch (Exception) { }
 
@@ -67,7 +65,8 @@ public unsafe partial struct DynamicEventManager
     }
 }
 
-[StructLayout(LayoutKind.Explicit, Size = 0x1B0)]
+// XXX: Some of these field offsets may no longer be accurate as of 7.0
+[StructLayout(LayoutKind.Explicit, Size = 0x1B8)]
 public unsafe partial struct DynamicEvent
 {
     [FieldOffset(0x40)] public uint QuestId; // from Excel field -- Quest required to engage with the event
