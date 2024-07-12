@@ -138,4 +138,10 @@ public partial class MainWindow : Window, IDisposable
             DalamudService.Log.Error(ex, "Draw");
         }
     }
+
+    public override void OnOpen()
+    {
+        // Do not automatically re-open if the window was manually opened and closed
+        AutoClosed = false;
+    }
 }

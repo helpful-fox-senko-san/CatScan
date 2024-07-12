@@ -235,15 +235,18 @@ public class Notifications : IDisposable
     {
         var isHuntZone = HuntData.Zones.ContainsKey(HuntModel.Territory.ZoneId);
 
-        if (!isHuntZone && Plugin.MainWindow.IsOpen)
+        if (Plugin.Configuration.AutoCloseEnabled)
         {
-            Plugin.MainWindow.IsOpen = false;
-            Plugin.MainWindow.AutoClosed = true;
-        }
-        else if (isHuntZone && Plugin.MainWindow.AutoClosed)
-        {
-            Plugin.MainWindow.IsOpen = true;
-            Plugin.MainWindow.AutoClosed = false;
+            if (!isHuntZone && Plugin.MainWindow.IsOpen)
+            {
+                Plugin.MainWindow.IsOpen = false;
+                Plugin.MainWindow.AutoClosed = true;
+            }
+            else if (isHuntZone && Plugin.MainWindow.AutoClosed)
+            {
+                Plugin.MainWindow.IsOpen = true;
+                Plugin.MainWindow.AutoClosed = false;
+            }
         }
 
         if (isHuntZone)
