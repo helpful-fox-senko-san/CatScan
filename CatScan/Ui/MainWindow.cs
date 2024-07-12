@@ -35,12 +35,12 @@ public partial class MainWindow : Window, IDisposable
     // If set, then the window is re-opened automatically too
     public bool AutoClosed = false;
 
-    public MainWindow(GameScanner gameScanner) : base("CatScan")
+    public MainWindow(GameScanner gameScanner) : base("CatScan###CatScan")
     {
         _gameScanner = gameScanner;
         this.SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(300, 200),
+            MinimumSize = new Vector2(300, 150),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
 
@@ -48,6 +48,13 @@ public partial class MainWindow : Window, IDisposable
 
         InitScanResults();
         InitTrainLog();
+        UpdateZoneName();
+
+        TitleBarButtons.Add(new(){
+            Icon = FontAwesomeIcon.Cog,
+            IconOffset = new(2, 1),
+            Click = (mb) => { if (mb == ImGuiMouseButton.Left) Plugin.OpenConfigUi(); }
+        });
     }
 
     public void Dispose()
@@ -64,39 +71,20 @@ public partial class MainWindow : Window, IDisposable
         _forceOpenTab = tab;
     }
 
-    private string _cachedZoneName = string.Empty;
-    private int _cachedZoneNameId = -1;
-
-    public void DrawMainWindow()
+    public void UpdateZoneName()
     {
-        string instanceText = "";
+        string instanceText = string.Empty;
         if (HuntModel.Territory.Instance > 0)
             instanceText = " i" + HuntModel.Territory.Instance;
 
         int zoneId = HuntModel.Territory.ZoneId;
-        string zoneName = (zoneId == _cachedZoneNameId) ? _cachedZoneName : string.Empty;
+        string zoneName = GameData.GetZoneData(zoneId).Name;
 
-        if (zoneName.Length == 0)
-        {
-            zoneName = _cachedZoneName = GameData.GetZoneData(zoneId).Name;
-            _cachedZoneNameId = zoneId;
-        }
+        this.WindowName = $"CatScan - {zoneName}{instanceText}###CatScan";
+    }
 
-        // There is some excess space at the top of the window
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 2.0f);
-        ImGuiHelpers.CenteredText($"{zoneName}{instanceText}");
-        ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 2.0f);
-
-        ImGui.SameLine();
-        {
-            using var pushFont = ImRaii.PushFont(UiBuilder.IconFont);
-            ImGui.SetCursorPosX(ImGui.GetWindowWidth() - 30.0f);
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() - 4.0f);
-            using var pushStyle = ImRaii.PushColor(ImGuiCol.Button, 0);
-            if (ImGui.Button(Dalamud.Interface.FontAwesomeIcon.Cog.ToIconString()))
-                Plugin.OpenConfigUi();
-        }
-
+    public void DrawMainWindow()
+    {
         var doTab = (string name, Tabs tabId, Action drawfn) => {
             bool forceOpenFlag = (_forceOpenTab == tabId);
 

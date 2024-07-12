@@ -50,6 +50,8 @@ public sealed class Plugin : IDalamudPlugin
 
         if (DalamudService.PluginInterface.Reason == PluginLoadReason.Reload)
             MainWindow.IsOpen = true;
+
+        Scanner.ZoneChange += () => MainWindow.UpdateZoneName();
     }
 
     public void Dispose()
