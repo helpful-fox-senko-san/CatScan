@@ -11,11 +11,16 @@ public partial class MainWindow : Window, IDisposable
 {
     private Vector4 _textColorKc = RGB(160, 192, 224);
 
+    private bool KillCountAvailable()
+    {
+        return HuntModel.KillCountLog.Count != 0;
+    }
+
     private void DrawKillCounts()
     {
         using var tabId = ImRaii.PushId("KillCounts");
 
-        if (HuntModel.KillCountLog.Count == 0)
+        if (!KillCountAvailable())
         {
             ImGui.Text("");
             using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);

@@ -107,7 +107,8 @@ public partial class MainWindow : Window, IDisposable
             doTab("Scan Results##PrimaryTab", Tabs.ScanResults, DrawScanResults);
             doTab("Train Log", Tabs.TrainLog, DrawTrainLog);
             doTab("Fates", Tabs.Fates, DrawFates);
-            doTab("Kill Count", Tabs.KillCount, DrawKillCounts);
+            if (KillCountAvailable())
+                doTab("Kill Count", Tabs.KillCount, DrawKillCounts);
         }
     }
 
