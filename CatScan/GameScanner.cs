@@ -83,6 +83,7 @@ public class GameFate
     public float Z;
     public float ProgressPct;
     public FateState State;
+    public bool Bonus;
     public System.DateTime? EndTimeUtc;
 
     // Milliseconds since the fate was last seen in the fate table
@@ -749,7 +750,8 @@ public class GameScanner : IDisposable
                     X = pos.X,
                     Z = pos.Z,
                     EndTimeUtc = state == FateState.Preparation ? null : System.DateTimeOffset.FromUnixTimeSeconds(startTime + duration).UtcDateTime,
-                    State = state
+                    State = state,
+                    Bonus = fate.HasExpBonus
                 };
                 ++_stats.GameStringReads;
 

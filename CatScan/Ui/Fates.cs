@@ -127,6 +127,12 @@ public partial class MainWindow : Window, IDisposable
                 else
                     ImGui.Text("[CE]");
             }
+            if (f.Bonus)
+            {
+                ImGui.SameLine();
+                using (ImRaii.PushColor(ImGuiCol.Text, RGB(256, 160, 256)))
+                    ImGui.Text("EXP+");
+            }
             ImGui.SameLine();
             ImGui.Text(f.Name);
 

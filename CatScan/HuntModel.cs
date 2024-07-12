@@ -79,6 +79,7 @@ public class ActiveFate
     public float MapX;
     public float MapY;
     public float ProgressPct;
+    public bool Bonus;
 
     public bool IsCE = false;
 
