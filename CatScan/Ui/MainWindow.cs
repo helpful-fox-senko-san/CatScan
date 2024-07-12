@@ -63,6 +63,9 @@ public partial class MainWindow : Window, IDisposable
 
     public void OpenTab(Tabs? tab)
     {
+        if (Collapsed.GetValueOrDefault(false))
+            Collapsed = false;
+
         if (IsOpen)
             BringToFront();
         else
