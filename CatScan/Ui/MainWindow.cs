@@ -63,8 +63,13 @@ public partial class MainWindow : Window, IDisposable
 
     public void OpenTab(Tabs? tab)
     {
-        if (Collapsed.GetValueOrDefault(false))
-            Collapsed = false;
+        if (_tempNoFocus)
+        {
+            this.Flags &= ~ImGuiWindowFlags.NoFocusOnAppearing;
+            _tempNoFocus = false;
+        }
+
+        _softHide = false;
 
         if (IsOpen)
             BringToFront();
@@ -115,21 +120,82 @@ public partial class MainWindow : Window, IDisposable
         }
     }
 
+    // Kinda hacky window auto-hide stuff
+    private Vector2 _windowPos;
+    private Vector2 _windowSize;
+
+    private bool _softHide = false;
+    private bool _tempNoFocus = false;
+    private bool _tempDrawNextFrame = false;
+
+    public new void Toggle()
+    {
+        // FIXME: Clicking a macro will unfocus the window, causing it to be hidden, and then causing this command to reopen the window instead
+        //        Need to add a timer or something to fix that
+        if (IsOpen && _softHide)
+        {
+            _softHide = false;
+            _tempDrawNextFrame = true;
+            BringToFront();
+            return;
+        }
+
+        base.Toggle();
+
+        if (IsOpen)
+            _tempDrawNextFrame = true;
+    }
+
+    public override void Update()
+    {
+        if (this.IsOpen)
+            ClipRectsHelper.Update();
+        else
+            _softHide = false;
+    }
+
+    public override bool DrawConditions()
+    {
+        if (_tempDrawNextFrame)
+        {
+            _tempDrawNextFrame = false;
+            return true;
+        }
+
+        if (!_softHide)
+            return true;
+
+        var clipr = ClipRectsHelper.GetClipRectForArea(_windowPos, _windowSize);
+
+        if (clipr != null)
+            return false;
+
+        this.Flags |= ImGuiWindowFlags.NoFocusOnAppearing;
+        _tempNoFocus = true;
+
+        return true;
+    }
+
     public override void Draw()
     {
         try
         {
-            // Enable field ops mode when enabled and in a Eureka zone
-            bool fieldOpsEligible = Plugin.Configuration.SpecialFieldOps && HuntData.IsEurekaZone(HuntModel.Territory.ZoneId);
+            if (_tempNoFocus)
+            {
+                this.Flags &= ~ImGuiWindowFlags.NoFocusOnAppearing;
+                _tempNoFocus = false;
+            }
 
-            if (fieldOpsEligible && !_showFieldOpsTabs)
-            {
-                _showFieldOpsTabs = true;
-            }
-            else if (!fieldOpsEligible && _showFieldOpsTabs)
-            {
-                _showFieldOpsTabs = false;
-            }
+            // Check if window overlaps a game window and make it uninteractable
+            _windowPos = ImGui.GetWindowPos();
+            _windowSize = ImGui.GetWindowSize();
+
+            var clipr = ClipRectsHelper.GetClipRectForArea(_windowPos, _windowSize);
+
+            _softHide = clipr != null && !ImGui.IsWindowFocused();
+
+            // Enable field ops mode when enabled and in a Eureka zone
+            _showFieldOpsTabs = Plugin.Configuration.SpecialFieldOps && HuntData.IsEurekaZone(HuntModel.Territory.ZoneId);
 
             DrawMainWindow();
         }

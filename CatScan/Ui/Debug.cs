@@ -14,6 +14,7 @@ public partial class ConfigWindow : Window, IDisposable
     private bool _displayFateNameCache = false;
     private bool _displayCENameCache = false;
     private bool _displayCETable = false;
+    private bool _displayWindowClipZones = false;
 
     private void DrawDebug()
     {
@@ -265,6 +266,30 @@ public partial class ConfigWindow : Window, IDisposable
 
                     ImGui.TextUnformatted(timeStr);
                 }
+            }
+        }
+
+        ImGui.Separator();
+
+        ClipRectsHelper.Update();
+        var clipRects = ClipRectsHelper.ActiveClipRects();
+
+        if (ImGui.Checkbox($"Display Window Clip Zones", ref _displayWindowClipZones) || _displayWindowClipZones)
+        {
+            using var table = ImRaii.Table("WindowClipZoneTable", 3);
+            ImGui.TableSetupColumn("name", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn("min", ImGuiTableColumnFlags.WidthFixed);
+            ImGui.TableSetupColumn("max", ImGuiTableColumnFlags.WidthFixed);
+
+            foreach (var clipRect in clipRects)
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(clipRect.Name);
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(clipRect.Min.ToString());
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted(clipRect.Max.ToString());
             }
         }
     }
