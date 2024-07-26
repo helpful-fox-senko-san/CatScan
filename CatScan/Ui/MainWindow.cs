@@ -6,6 +6,7 @@ using ImGuiNET;
 using System;
 using System.IO;
 using System.Numerics;
+using Dalamud.Support;
 
 namespace CatScan.Ui;
 
@@ -191,8 +192,9 @@ public partial class MainWindow : Window, IDisposable
             _windowSize = ImGui.GetWindowSize();
 
             var clipr = ClipRectsHelper.GetClipRectForArea(_windowPos, _windowSize);
+            var isFocusedOrHovered = IsFocused || ImGui.IsWindowFocused() || ImGui.IsWindowHovered();
 
-            _softHide = clipr != null && !ImGui.IsWindowFocused();
+            _softHide = clipr != null && !isFocusedOrHovered;
 
             // Enable field ops mode when enabled and in a Eureka zone
             _showFieldOpsTabs = Plugin.Configuration.SpecialFieldOps && HuntData.IsEurekaZone(HuntModel.Territory.ZoneId);
