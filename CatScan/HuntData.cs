@@ -279,10 +279,10 @@ public static partial class HuntData
 
     // -- Dawntrail
         {1187, DT_Zone("Urqopacha", 3,
-            B("Mad Maguey"), B("Chupacabra"), A("Nechuciho"), A("Queen Hawk") // S rank TBA
+            B("Mad Maguey"), B("Chupacabra"), A("Nechuciho"), A("Queen Hawk"), S("Kirlirger the Abhorrent")
         )},
         {1188, DT_Zone("Kozama'uka", 3,
-            B("The Slammer"), B("Go'ozoabek'be"), A("Pkuucha"), A("The Raintriller") // S rank TBA
+            B("The Slammer"), B("Go'ozoabek'be"), A("Pkuucha"), A("The Raintriller"), S("Ihnuxokiy")
         )},
         {1189, DT_Zone("Yak T'el", 3,
             B("Leafsource Hadoll Ja"), B("Xty'iinbek"), A("Starcrier"), A("Rrax Yity'a"), S("Neyoozoteel")
