@@ -278,22 +278,22 @@ public static partial class HuntData
         )},
 
     // -- Dawntrail
-        {1187, DT_Zone("Urqopacha", 3,
+        {1187, DT_Zone("Urqopacha", 1,
             B("Mad Maguey"), B("Chupacabra"), A("Nechuciho"), A("Queen Hawk"), S("Kirlirger the Abhorrent")
         )},
-        {1188, DT_Zone("Kozama'uka", 3,
+        {1188, DT_Zone("Kozama'uka", 1,
             B("The Slammer"), B("Go'ozoabek'be"), A("Pkuucha"), A("The Raintriller"), S("Ihnuxokiy")
         )},
-        {1189, DT_Zone("Yak T'el", 3,
+        {1189, DT_Zone("Yak T'el", 1,
             B("Leafsource Hadoll Ja"), B("Xty'iinbek"), A("Starcrier"), A("Rrax Yity'a"), S("Neyoozoteel")
         )},
-        {1190, DT_Zone("Shaaloani", 3,
+        {1190, DT_Zone("Shaaloani", 2,
             B("Nopalitender Fabuloso"), B("Uktena"), A("Yehehetoaua'pyo"), A("Keheniheyamewi"), S("Sansheya"), FATE("Ttokrrone")
         )},
-        {1191, DT_Zone("Heritage Found", 3,
+        {1191, DT_Zone("Heritage Found", 2,
             B("Gallowsbeak"), B("Gargant"), A("Heshuala"), A("Urna Variabilis"), S("Atticus the Primogenitor")
         )},
-        {1192, DT_Zone("Living Memory", 3,
+        {1192, DT_Zone("Living Memory", 1,
             B("Jewel Bearer"), B("13th Child"), A("Sally the Sweeper"), A("Cat's Eye"), S("The Forecaster"), FATE("Mica the Magical Mu")
         )},
 
