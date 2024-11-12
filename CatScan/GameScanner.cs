@@ -392,17 +392,17 @@ public class GameScanner : IDisposable
             return;
         }
 
-        var gameData = localPlayer.CurrentWorld.GameData;
+        var gameData = localPlayer.CurrentWorld.ValueNullable;
 
-        if (gameData == null)
+        if (!localPlayer.CurrentWorld.IsValid)
         {
             _worldId = -1;
             _worldName = string.Empty;
             return;
         }
 
-        _worldId = (int)localPlayer.CurrentWorld.Id;
-        _worldName = gameData.Name.ToString();
+        _worldId = (int)localPlayer.CurrentWorld.Value.RowId;
+        _worldName = localPlayer.CurrentWorld.Value.Name.ToString();
         ++_stats.GameStringReads;
     }
 
@@ -434,7 +434,7 @@ public class GameScanner : IDisposable
         RegisterFrameworkUpdate();
     }
 
-    private void OnLogout()
+    private void OnLogout(int type, int code)
     {
         if (_zoneId >= 0)
         {
@@ -751,7 +751,7 @@ public class GameScanner : IDisposable
                     Z = pos.Z,
                     EndTimeUtc = state == FateState.Preparation ? null : System.DateTimeOffset.FromUnixTimeSeconds(startTime + duration).UtcDateTime,
                     State = state,
-                    Bonus = fate.HasExpBonus
+                    Bonus = fate.HasBonus
                 };
                 ++_stats.GameStringReads;
 

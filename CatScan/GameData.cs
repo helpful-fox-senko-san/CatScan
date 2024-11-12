@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-
-using BNpcName = Lumina.Excel.GeneratedSheets.BNpcName;
-using DynamicEvent = Lumina.Excel.GeneratedSheets.DynamicEvent;
-using Fate = Lumina.Excel.GeneratedSheets.Fate;
-using Map = Lumina.Excel.GeneratedSheets.Map;
-using TerritoryType = Lumina.Excel.GeneratedSheets.TerritoryType;
+using Dalamud.Interface.Animation.EasingFunctions;
+using BNpcName = Lumina.Excel.Sheets.BNpcName;
+using DynamicEvent = Lumina.Excel.Sheets.DynamicEvent;
+using Fate = Lumina.Excel.Sheets.Fate;
+using Map = Lumina.Excel.Sheets.Map;
+using TerritoryType = Lumina.Excel.Sheets.TerritoryType;
 
 // Game data functions
 public class GameData
@@ -60,20 +60,17 @@ public class GameData
     private static ZoneData CacheZoneData(int zoneId)
     {
         var zoneData = new ZoneData();
-        var territoryRow = _territoryExcel.GetRow((uint)zoneId);
 
-        if (territoryRow != null)
+        if (_territoryExcel.TryGetRow((uint)zoneId, out var territoryRow))
         {
-            zoneData.MapId = territoryRow.Map.Row;
-            zoneData.Name = territoryRow?.PlaceName?.Value?.Name?.ToString() ?? "#" + zoneId;
+            zoneData.MapId = territoryRow.Map.RowId;
+            zoneData.Name = territoryRow.PlaceName.ValueNullable?.Name.ToString() ?? "#" + zoneId;
 
-            var mapRow = _mapExcel?.GetRow(zoneData.MapId);
-
-            if (mapRow != null)
+            if (_mapExcel.TryGetRow(zoneData.MapId, out var mapRow))
             {
-                zoneData.MapOffsetX = (mapRow?.OffsetX / -50.0f) ?? 0.0f;
-                zoneData.MapOffsetY = (mapRow?.OffsetY / -50.0f) ?? 0.0f;
-                zoneData.MapScale = (mapRow?.SizeFactor / 100.0f) ?? 100.0f;
+                zoneData.MapOffsetX = mapRow.OffsetX / -50.0f;
+                zoneData.MapOffsetY = mapRow.OffsetY / -50.0f;
+                zoneData.MapScale = mapRow.SizeFactor / 100.0f;
             }
         }
 
@@ -95,14 +92,8 @@ public class GameData
 
     private static void InitTerritoryData()
     {
-        _territoryExcel = DalamudService.DataManager.GetExcelSheet<TerritoryType>()!;
-        _mapExcel = DalamudService.DataManager.GetExcelSheet<Map>()!;
-
-        if (_territoryExcel == null)
-            throw new System.Exception("Territory data not available");
-
-        if (_mapExcel == null)
-            throw new System.Exception("Map data not available");
+        _territoryExcel = DalamudService.DataManager.GetExcelSheet<TerritoryType>();
+        _mapExcel = DalamudService.DataManager.GetExcelSheet<Map>();
 
         // Pre-load data for known zones
         foreach (var territoryId in CatScan.HuntData.Zones.Keys)
@@ -114,9 +105,6 @@ public class GameData
     private static void InitBNpcNameCache()
     {
         var bnpcNameExcel = DalamudService.DataManager.GetExcelSheet<BNpcName>(Dalamud.Game.ClientLanguage.English);
-
-        if (bnpcNameExcel == null)
-            throw new System.Exception("BNpcName data not available");
 
         var huntNamesList = new List<(byte[], string)>();
         var seenNames = new HashSet<string>();
@@ -159,7 +147,7 @@ public class GameData
         {
             foreach (var (nameByteArray, nameString) in huntNames)
             {
-                if (fastStricmp(nameByteArray, row.Singular.RawData))
+                if (fastStricmp(nameByteArray, row.Singular.Data.Span))
                     _bnpcNameIdToString.Add(row.RowId, nameString);
             }
         }
@@ -170,9 +158,6 @@ public class GameData
     private static void InitFateNameCache()
     {
         var fateExcel = DalamudService.DataManager.GetExcelSheet<Fate>(Dalamud.Game.ClientLanguage.English);
-
-        if (fateExcel == null)
-            throw new System.Exception("Fate data not available");
 
         var fateNamesList = new List<(byte[], string)>();
         var seenNames = new HashSet<string>();
@@ -215,7 +200,7 @@ public class GameData
         {
             foreach (var (nameByteArray, nameString) in fateNames)
             {
-                if (fastStricmp(nameByteArray, row.Name.RawData))
+                if (fastStricmp(nameByteArray, row.Name.Data.Span))
                     _fateIdToString.Add(row.RowId, nameString);
             }
         }
@@ -228,13 +213,10 @@ public class GameData
     {
         var ceExcel = DalamudService.DataManager.GetExcelSheet<DynamicEvent>(Dalamud.Game.ClientLanguage.English);
 
-        if (ceExcel == null)
-            throw new System.Exception("CE data not available");
-
         foreach (var row in ceExcel)
         {
             if (row.RowId != 0)
-                _ceIdToString.Add(row.RowId, row.Name);
+                _ceIdToString.Add(row.RowId, row.Name.ExtractText());
         }
     }
 
@@ -256,8 +238,8 @@ public class GameData
         if (name == null)
         {
             var fateExcel = DalamudService.DataManager.GetExcelSheet<Fate>(Dalamud.Game.ClientLanguage.English);
-            var fateRow = fateExcel?.GetRow(fateId);
-            name = fateRow?.Name?.ToString();
+            if (fateExcel.TryGetRow(fateId, out var fateRow))
+                name = fateRow.Name.ExtractText();
         }
         return name;
     }
@@ -277,9 +259,6 @@ public class GameData
 
         var bnpcNameExcel = DalamudService.DataManager.GetExcelSheet<BNpcName>();
 
-        if (bnpcNameExcel == null)
-            throw new System.Exception("BNpcName data not available");
-
         uint nameId = 0;
 
         foreach (var entry in _bnpcNameIdToString)
@@ -291,10 +270,10 @@ public class GameData
             }
         }
 
-        var nameChars = bnpcNameExcel.GetRow(nameId)?.Singular.ToString().ToCharArray();
-
-        if (nameChars == null)
+        if (!bnpcNameExcel.TryGetRow(nameId, out var nameRow))
             return englishName;
+
+        var nameChars = nameRow.Singular.ToString().ToCharArray();
 
         // Try to imitate the upper-casing logic... Probably broken
         int n = nameChars.Length;
@@ -320,8 +299,8 @@ public class GameData
         if (zoneId == _cachedZoneId)
             return _cachedZoneName;
         var territoryData = DalamudService.DataManager.GetExcelSheet<TerritoryType>();
-        var territoryType = territoryData?.GetRow((uint)zoneId);
-        _cachedZoneName = territoryType?.PlaceName?.Value?.Name?.ToString();
+        var territoryType = territoryData?.GetRowOrDefault((uint)zoneId);
+        _cachedZoneName = territoryType?.PlaceName.ValueNullable?.Name.ToString();
         return _cachedZoneName;
     }
 }
