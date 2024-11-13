@@ -1,6 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Dalamud.Interface.Animation.EasingFunctions;
+
 using BNpcName = Lumina.Excel.Sheets.BNpcName;
 using DynamicEvent = Lumina.Excel.Sheets.DynamicEvent;
 using Fate = Lumina.Excel.Sheets.Fate;
@@ -50,9 +51,33 @@ public class GameData
         InitTerritoryData();
 
         Task.Run(() => {
-            InitBNpcNameCache();
-            InitFateNameCache();
-            InitCENameCache();
+            try
+            {
+                InitBNpcNameCache();
+            }
+            catch (Exception e)
+            {
+                DalamudService.Log.Error(e, "Failed to find initialize BNPC name cache");
+            }
+
+            try
+            {
+                InitFateNameCache();
+            }
+            catch (Exception e)
+            {
+                DalamudService.Log.Error(e, "Failed to find initialize FATE name cache");
+            }
+
+            try
+            {
+                InitCENameCache();
+            }
+            catch (Exception e)
+            {
+                DalamudService.Log.Error(e, "Failed to find initialize CE name cache");
+            }
+
             NameDataReady = true;
         });
     }

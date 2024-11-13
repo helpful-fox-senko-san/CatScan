@@ -372,7 +372,9 @@ public class GameScanner : IDisposable
             return;
         }
 
-        _instance = (int)uistate->PublicInstance.InstanceId;
+        var publicInstance = (FFXIV.PublicInstance*)(&uistate->PublicInstance);
+
+        _instance = (int)publicInstance->InstanceId;
 
         if (_instance < 0 || _instance > 9)
         {
@@ -391,8 +393,6 @@ public class GameScanner : IDisposable
             _worldName = string.Empty;
             return;
         }
-
-        var gameData = localPlayer.CurrentWorld.ValueNullable;
 
         if (!localPlayer.CurrentWorld.IsValid)
         {
@@ -937,8 +937,12 @@ public class GameScanner : IDisposable
             _deltaMs = 100.0;
 
         ScanTick();
-        ScanCETick();
-        ScanFateTick();
+
+        if (GameData.CENameCacheSize > 0)
+            ScanCETick();
+
+        if (GameData.FateNameCacheSize > 0)
+            ScanFateTick();
 
         _deltaMs = 0.0;
     }
