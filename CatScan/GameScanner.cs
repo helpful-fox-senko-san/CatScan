@@ -4,7 +4,6 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using FFXIVClientStructs.FFXIV.Common.Math;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -373,9 +372,7 @@ public class GameScanner : IDisposable
             return;
         }
 
-        var publicInstance = (FFXIV.PublicInstance*)(&uistate->PublicInstance);
-
-        _instance = (int)publicInstance->InstanceId;
+        _instance = (int)uistate->PublicInstance.InstanceId;
 
         if (_instance < 0 || _instance > 9)
         {
@@ -671,12 +668,6 @@ public class GameScanner : IDisposable
         }
     }
 
-    private unsafe Vector3 ReadFatePositionUnsafe(IFate fate)
-    {
-        var fate2 = (FFXIV.Fate*)fate.Address;
-        return fate2->Location;
-    }
-
     // Called in Framework thread while zone ID is complete and scanning is enabled
     private void ScanFateTick()
     {
@@ -744,7 +735,7 @@ public class GameScanner : IDisposable
                 if (state != FateState.Preparation && (startTime == 0 || duration == 0))
                     state = FateState.Preparation;
 
-                var pos = ReadFatePositionUnsafe(fate);
+                var pos = fate.Position;
 
                 // Fates report an inital position of 0,0 after spawning
                 // Skip the fate until it reports real data
