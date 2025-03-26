@@ -12,12 +12,12 @@ namespace CatScan.Ui;
 
 public partial class MainWindow : Window, IDisposable
 {
-    private ISharedImmediateTexture _iconB;
-    private ISharedImmediateTexture _iconA;
-    private ISharedImmediateTexture _iconS;
-    private ISharedImmediateTexture _iconF;
-    private ISharedImmediateTexture _iconStar;
-    private ISharedImmediateTexture _iconCE;
+    private ISharedImmediateTexture? _iconB;
+    private ISharedImmediateTexture? _iconA;
+    private ISharedImmediateTexture? _iconS;
+    private ISharedImmediateTexture? _iconF;
+    private ISharedImmediateTexture? _iconStar;
+    private ISharedImmediateTexture? _iconCE;
 
     private Vector4 _textColorPulled = RGB(224, 96, 96);
     private Vector4 _textColorDead = RGB(160, 96, 96);

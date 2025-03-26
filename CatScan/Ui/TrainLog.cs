@@ -11,9 +11,9 @@ namespace CatScan.Ui;
 
 public partial class MainWindow : Window, IDisposable
 {
-    private ISharedImmediateTexture _iconGrey;
-    private ISharedImmediateTexture _iconGreen;
-    private ISharedImmediateTexture _iconRed;
+    private ISharedImmediateTexture? _iconGrey;
+    private ISharedImmediateTexture? _iconGreen;
+    private ISharedImmediateTexture? _iconRed;
 
     private class TrainLogMark
     {
