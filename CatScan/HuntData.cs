@@ -290,7 +290,7 @@ public static partial class HuntData
         {1190, DT_Zone("Shaaloani", 1,
             B("Nopalitender Fabuloso"), B("Uktena"), A("Yehehetoaua'pyo"), A("Keheniheyamewi"), S("Sansheya"), FATE("Ttokrrone")
         )},
-        {1191, DT_Zone("Heritage Found", 1,
+        {1191, DT_Zone("Heritage Found", 2,
             B("Gallowsbeak"), B("Gargant"), A("Heshuala"), A("Urna Variabilis"), S("Atticus the Primogenitor")
         )},
         {1192, DT_Zone("Living Memory", 1,
