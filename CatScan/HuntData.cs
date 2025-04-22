@@ -266,7 +266,7 @@ public static partial class HuntData
         {958, EW_Zone("Garlemald",
             B("Emperor's Rose"), B("Warmonger"), A("Minerva"), A("Aegeiros"), S("Armstrong")
         )},
-        {959, EW_Zone("Mare Lamentorum",
+        {959, EW_Zone("Mare Lamentorum", 3,
             B("Genesis Rock"), B("Daphnia Magna"), A("Lunatender Queen"), A("Mousse Princess"), S("Ruminator"),
             KC("Thinker"), KC("Wanderer"), KC("Weeper")
         )},
@@ -290,7 +290,7 @@ public static partial class HuntData
         {1190, DT_Zone("Shaaloani", 1,
             B("Nopalitender Fabuloso"), B("Uktena"), A("Yehehetoaua'pyo"), A("Keheniheyamewi"), S("Sansheya"), FATE("Ttokrrone")
         )},
-        {1191, DT_Zone("Heritage Found", 2,
+        {1191, DT_Zone("Heritage Found", 1,
             B("Gallowsbeak"), B("Gargant"), A("Heshuala"), A("Urna Variabilis"), S("Atticus the Primogenitor")
         )},
         {1192, DT_Zone("Living Memory", 1,
