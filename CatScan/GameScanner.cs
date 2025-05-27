@@ -936,10 +936,8 @@ public class GameScanner : IDisposable
 
         ScanTick();
 
-        /*
         if (GameData.CENameCacheSize > 0)
             ScanCETick();
-        */
 
         if (GameData.FateNameCacheSize > 0)
             ScanFateTick();
