@@ -12,7 +12,8 @@ public enum Expansion
     EW,
     DT,
     Eureka,
-    Bozja
+    Bozja,
+    Occult
 }
 
 public enum Rank
@@ -101,7 +102,7 @@ public static partial class HuntData
         return new Zone(Expansion.EW, name, instances, m2);
     }
 
-    // Add SS rank for all Dawntrail zones ... when it comes out!
+    // Add SS rank for all Dawntrail zones
     private static Zone DT_Zone(string name, int instances, params Mark[] marks)
     {
         var m2 = new Mark[marks.Length + 2];
@@ -119,6 +120,11 @@ public static partial class HuntData
     private static Zone Bozja_Zone(string name, params Mark[] marks)
     {
         return new Zone(Expansion.Bozja, name, 9, marks);
+    }
+
+    private static Zone Occult_Zone(string name, params Mark[] marks)
+    {
+        return new Zone(Expansion.Occult, name, 9, marks);
     }
 
     // -- Shorthand overloads for uninstanced maps
@@ -284,7 +290,7 @@ public static partial class HuntData
         {1188, DT_Zone("Kozama'uka", 1,
             B("The Slammer"), B("Go'ozoabek'be"), A("Pkuucha"), A("The Raintriller"), S("Ihnuxokiy")
         )},
-        {1189, DT_Zone("Yak T'el", 3,
+        {1189, DT_Zone("Yak T'el", 2,
             B("Leafsource Hadoll Ja"), B("Xty'iinbek"), A("Starcrier"), A("Rrax Yity'a"), S("Neyoozoteel")
         )},
         {1190, DT_Zone("Shaaloani", 1,
@@ -415,7 +421,13 @@ public static partial class HuntData
             KC("4th Legion Cavalry"),
             KC("4th Legion Roader"),
             KC("4th Legion Rearguard")
-        )}
+        )},
+
+    // -- Occult Crescent
+
+        // XXX: Unclear if any mobs need tracking here yet
+
+        {1252, Occult_Zone("South Horn")}
     };
 
     public readonly static HashSet<string> EpicFates = new HashSet<string>{
