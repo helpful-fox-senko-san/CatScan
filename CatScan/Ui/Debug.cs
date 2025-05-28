@@ -233,7 +233,12 @@ public partial class ConfigWindow : Window, IDisposable
                     ImGui.TextUnformatted($"{ce->DynamicEventId}");
 
                     ImGui.TableNextColumn();
-                    ImGui.Selectable(ce->Name.ToString());
+                    if (ImGui.Selectable(ce->Name.ToString()))
+                    {
+                        var x = ((41.0f / 1.0f) * ((ce->Position.X + 1024.0f) / 2048.0f)) + 1.0f - 0.0f;
+                        var y = ((41.0f / 1.0f) * ((ce->Position.Z + 1024.0f) / 2048.0f)) + 1.0f - 0.0f;
+                        GameFunctions.OpenMapLink(x, y);
+                    }
 
                     ImGui.TableNextColumn();
 
