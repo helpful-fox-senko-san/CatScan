@@ -68,13 +68,14 @@ public partial class MainWindow : Window, IDisposable
 
     private void DrawEpicFateBar()
     {
-        var epicFateList = new List<ActiveFate>(HuntModel.ActiveFates.Values);
+        var epicFateList = new List<ScannedFate>(HuntModel.ActiveFateValues);
         epicFateList.RemoveAll((x) => !x.Epic && !x.IsCE);
 
         // Don't want to highlight CLL/Dalriada
         epicFateList.RemoveAll((x) => HuntData.LargeScaleBattles.Contains(x.EnglishName));
+        epicFateList.RemoveAll((x) => HuntData.OccultLargeScaleBattles.Contains(x.EnglishName));
 
-        epicFateList.Sort((ActiveFate a, ActiveFate b) => {
+        epicFateList.Sort((ScannedFate a, ScannedFate b) => {
             return (int)(a.EndTimeUtc - b.EndTimeUtc).TotalSeconds;
         });
 
@@ -124,7 +125,7 @@ public partial class MainWindow : Window, IDisposable
     {
         using var tabId = ImRaii.PushId("ScanResults");
 
-        if (HuntModel.ScanResults.Count == 0 && HuntModel.ActiveFates.Count == 0 && !_gameScanner.ScanningEnabled)
+        if (HuntModel.ScanResults.Count == 0 && HuntModel.ActiveFateCount == 0 && !_gameScanner.ScanningEnabled)
         {
             {
                 using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);

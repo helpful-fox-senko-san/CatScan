@@ -180,7 +180,7 @@ public partial class ConfigWindow : Window, IDisposable
         ImGui.Separator();
 
         b = Plugin.Configuration.SpecialFieldOps;
-        if (ImGui.Checkbox("Eureka tracker mode", ref b))
+        if (ImGui.Checkbox("Field Op tracker mode", ref b))
         {
             Plugin.Configuration.SpecialFieldOps = b;
             Plugin.Configuration.Save();
@@ -188,7 +188,7 @@ public partial class ConfigWindow : Window, IDisposable
                 Plugin.MainWindow.OpenTab(MainWindow.Tabs.ScanResults);
         }
 
-        ImGui.TextWrapped("Enables special NM tracker interface while in Eureka.");
+        ImGui.TextWrapped("Enables special NM/CE tracker interface while inside Eureka or Occult Crescent zones.");
 
         ImGui.Separator();
 

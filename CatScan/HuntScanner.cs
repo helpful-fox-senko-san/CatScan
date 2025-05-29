@@ -23,7 +23,7 @@ public class HuntScanner
 
     // Event is appropriate to be consumed by notification generators
     public delegate void NewScanResultDelegate(ScanResult scanResult);
-    public delegate void NewFateDelegate(ActiveFate fate);
+    public delegate void NewFateDelegate(ScannedFate fate);
     public delegate void ZoneChangeDelegate();
 
     public event NewScanResultDelegate? NewScanResult;
@@ -152,15 +152,17 @@ public class HuntScanner
     }
 
     // Apply dynamic data from a scanned GameFate on to an existing Fate
-    private void UpdateActiveFate(ActiveFate activeFate, GameFate gameFate)
+    private void UpdateActiveFate(ScannedFate activeFate, GameFate gameFate)
     {
         activeFate.RawX = gameFate.X;
         activeFate.RawZ = gameFate.Z;
         activeFate.MapX = ToMapOrd(gameFate.X, _zoneData.MapOffsetX, _zoneData.MapScale);
         activeFate.MapY = ToMapOrd(gameFate.Z, _zoneData.MapOffsetY, _zoneData.MapScale);
+        activeFate.Missing = false;
         activeFate.ProgressPct = gameFate.ProgressPct;
 
-        if (gameFate.State != FateState.Preparation)
+        // XXX: Activate CEs immediately so preparation phase timers are displayed
+        if (gameFate.State != FateState.Preparation || gameFate.IsCE)
         {
             activeFate.EndTimeUtc = gameFate.EndTimeUtc ?? System.DateTime.MinValue;
             activeFate.Running = true;
@@ -263,7 +265,7 @@ public class HuntScanner
         }
     }
 
-    private void SynthesizeNewEurekaNM(ActiveFate activeFate, GameFate gameFate)
+    private void SynthesizeNewEurekaNM(ScannedFate activeFate, GameFate gameFate)
     {
         SynthesizeEurekaNMCommon(activeFate.EnglishName, (EurekaNM nm) => {
             if (HuntModel.ScanResults.TryGetValue(nm.NMName, out var scanResult))
@@ -284,7 +286,7 @@ public class HuntScanner
         });
     }
 
-    private void SynthesizeUpdatedEurekaNM(ActiveFate activeFate, GameFate gameFate)
+    private void SynthesizeUpdatedEurekaNM(ScannedFate activeFate, GameFate gameFate)
     {
         SynthesizeEurekaNMCommon(activeFate.EnglishName, (EurekaNM nm) => {
             if (!HuntModel.ScanResults.TryGetValue(nm.NMName, out var scanResult))
@@ -295,7 +297,7 @@ public class HuntScanner
         });
     }
 
-    private void SynthesizeLostEurekaNM(ActiveFate activeFate, GameFate gameFate)
+    private void SynthesizeLostEurekaNM(ScannedFate activeFate, GameFate gameFate)
     {
         SynthesizeEurekaNMCommon(activeFate.EnglishName, (EurekaNM nm) => {
             if (!HuntModel.ScanResults.TryGetValue(nm.NMName, out var scanResult))
@@ -311,7 +313,7 @@ public class HuntScanner
         using var modelLock = HuntModel.Lock();
 
         // Update to an already recorded FATE
-        if (HuntModel.ActiveFates.TryGetValue(fate.EnglishName, out var activeFate))
+        if (HuntModel.Fates.TryGetValue(fate.EnglishName, out var activeFate))
         {
             UpdateActiveFate(activeFate, fate);
 
@@ -321,15 +323,16 @@ public class HuntScanner
         else
         {
             // New fate -- only care if its a world boss fate
-            activeFate = new ActiveFate(){
+            activeFate = new ScannedFate(){
                 Name = fate.Name,
                 EnglishName = fate.EnglishName,
                 Epic = HuntData.EpicFates.Contains(fate.EnglishName),
                 FirstSeenTimeUtc = HuntModel.UtcNow,
                 IsCE = fate.IsCE,
-                Bonus = fate.Bonus
+                Bonus = fate.Bonus,
+                Missing = false
             };
-            HuntModel.ActiveFates.TryAdd(fate.EnglishName, activeFate);
+            HuntModel.Fates.TryAdd(fate.EnglishName, activeFate);
             UpdateActiveFate(activeFate, fate);
             NewFate?.Invoke(activeFate);
 
@@ -351,11 +354,24 @@ public class HuntScanner
 
         if (HuntModel.Territory.ZoneId == 827) // Hydatos
         {
-            if (HuntModel.ActiveFates.TryGetValue(fate.EnglishName, out var activeFate))
-                SynthesizeLostEurekaNM(activeFate, fate);
+            if (HuntModel.Fates.TryGetValue(fate.EnglishName, out var hydatosFate))
+                SynthesizeLostEurekaNM(hydatosFate, fate);
         }
 
-        HuntModel.ActiveFates.Remove(fate.EnglishName, out _);
+        // TODO: uncomment this
+        /*
+        if (!fate.IsCE)
+        {
+            HuntModel.Fates.Remove(fate.EnglishName, out _);
+            return;
+        }
+        */
+
+        if (HuntModel.Fates.TryGetValue(fate.EnglishName, out var activeFate))
+        {
+            activeFate.ProgressPct = fate.ProgressPct;
+            activeFate.Missing = true;
+        }
     }
 
     private void OnUpdatedEnemy(GameEnemy enemy)
@@ -413,7 +429,7 @@ public class HuntScanner
         _kcEnemies.Clear();
 
         // Clear the active fate list
-        HuntModel.ActiveFates.Clear();
+        HuntModel.Fates.Clear();
         HuntModel.LastFailedFateUtc = HuntModel.UtcNow;
         HuntModel.LastFailedFateName = string.Empty;
 
@@ -422,7 +438,8 @@ public class HuntScanner
 
         // If its Eureka/Bozja, clear everything, because we can't track instances
         if (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka
-         || HuntModel.Territory.ZoneData.Expansion == Expansion.Bozja)
+         || HuntModel.Territory.ZoneData.Expansion == Expansion.Bozja
+         || HuntModel.Territory.ZoneData.Expansion == Expansion.Occult)
         {
             // An unneccessary call happens after debug deserialization
             // Avoid wiping out data by checking for this case

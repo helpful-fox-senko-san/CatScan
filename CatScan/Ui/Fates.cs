@@ -14,7 +14,7 @@ public partial class MainWindow : Window, IDisposable
     {
         using var tabId = ImRaii.PushId("Fates");
 
-        if (HuntModel.ScanResults.Count == 0 && HuntModel.ActiveFates.Count == 0 && !_gameScanner.ScanningEnabled)
+        if (HuntModel.ScanResults.Count == 0 && HuntModel.ActiveFateCount== 0 && !_gameScanner.ScanningEnabled)
         {
             {
                 using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
@@ -30,9 +30,9 @@ public partial class MainWindow : Window, IDisposable
 
         DrawEpicFateBar();
 
-        var fateList = new List<ActiveFate>(HuntModel.ActiveFates.Values);
+        var fateList = new List<ScannedFate>(HuntModel.ActiveFateValues);
 
-        fateList.Sort((ActiveFate a, ActiveFate b) => {
+        fateList.Sort((ScannedFate a, ScannedFate b) => {
             if (a.Running && !b.Running)
                 return -1;
             else if (b.Running && !a.Running)
@@ -62,7 +62,7 @@ public partial class MainWindow : Window, IDisposable
         ImGui.TableHeader("Dist.");
         ImGui.TableNextColumn();
         ImGui.TableHeader("Time");
-        var calcDist2 = (ActiveFate f) => {
+        var calcDist2 = (ScannedFate f) => {
             var dx = System.Math.Abs(playerPos.X - f.RawX);
             var dz = System.Math.Abs(playerPos.Z - f.RawZ);
             return dx*dx + dz*dz;
@@ -71,24 +71,24 @@ public partial class MainWindow : Window, IDisposable
         if (tableSortSpecs.Specs.ColumnIndex == 0)
         {
             if (tableSortSpecs.Specs.SortDirection != ImGuiSortDirection.Descending)
-                fateList.Sort((ActiveFate a, ActiveFate b) => a.Name.CompareTo(b.Name));
+                fateList.Sort((ScannedFate a, ScannedFate b) => a.Name.CompareTo(b.Name));
             else
-                fateList.Sort((ActiveFate a, ActiveFate b) => b.Name.CompareTo(a.Name));
+                fateList.Sort((ScannedFate a, ScannedFate b) => b.Name.CompareTo(a.Name));
         }
         else if (tableSortSpecs.Specs.ColumnIndex == 1)
         {
             if (tableSortSpecs.Specs.SortDirection != ImGuiSortDirection.Descending)
-                fateList.Sort((ActiveFate a, ActiveFate b) => a.ProgressPct.CompareTo(b.ProgressPct));
+                fateList.Sort((ScannedFate a, ScannedFate b) => a.ProgressPct.CompareTo(b.ProgressPct));
             else
-                fateList.Sort((ActiveFate a, ActiveFate b) => b.ProgressPct.CompareTo(a.ProgressPct));
+                fateList.Sort((ScannedFate a, ScannedFate b) => b.ProgressPct.CompareTo(a.ProgressPct));
 
         }
         else if (tableSortSpecs.Specs.ColumnIndex == 2)
         {
             if (tableSortSpecs.Specs.SortDirection != ImGuiSortDirection.Descending)
-                fateList.Sort((ActiveFate a, ActiveFate b) => calcDist2(a).CompareTo(calcDist2(b)));
+                fateList.Sort((ScannedFate a, ScannedFate b) => calcDist2(a).CompareTo(calcDist2(b)));
             else
-                fateList.Sort((ActiveFate a, ActiveFate b) => calcDist2(b).CompareTo(calcDist2(a)));
+                fateList.Sort((ScannedFate a, ScannedFate b) => calcDist2(b).CompareTo(calcDist2(a)));
 
         }
         else if (tableSortSpecs.Specs.ColumnIndex == 3)
@@ -111,6 +111,11 @@ public partial class MainWindow : Window, IDisposable
                 color = _textColorDead;
             else if (f.ProgressPct > 0.0)
                 color = _textColorPulled;
+
+            // XXX: Special case because CEs have their prep timers tracked
+            //      It would be better to pass through the FATE state instead
+            if (color == _textColorDead && f.IsCE && f.ProgressPct == 0.0)
+                color = Vector4.Zero;
 
             using var pushColor1 = ImRaii.PushColor(ImGuiCol.Text, color, color != Vector4.Zero);
             // The default hover colors are too intense

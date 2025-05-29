@@ -14,6 +14,7 @@ public partial class MainWindow : Window, IDisposable
 {
     public enum Tabs
     {
+        FieldOps,
         ScanResults,
         TrainLog,
         Fates,
@@ -30,7 +31,8 @@ public partial class MainWindow : Window, IDisposable
     }
 
     private Tabs? _forceOpenTab;
-    private bool _showFieldOpsTabs = false;
+    private bool _showEurekaTab = false;
+    private bool _showOccultTab = false;
 
     // Set to true when closed automatically
     // If set, then the window is re-opened automatically too
@@ -106,9 +108,17 @@ public partial class MainWindow : Window, IDisposable
                 _forceOpenTab = null;
         };
 
-        if (_showFieldOpsTabs)
+        if (_showEurekaTab)
         {
             DrawEurekaTracker();
+        }
+        else if (_showOccultTab)
+        {
+            using var tabs = ImRaii.TabBar("MainWindowTabs");
+            doTab("Tracker", Tabs.FieldOps, DrawOccultTracker);
+            doTab("Fates", Tabs.Fates, DrawFates);
+            if (KillCountAvailable())
+                doTab("Kill Count", Tabs.KillCount, DrawKillCounts);
         }
         else
         {
@@ -196,8 +206,9 @@ public partial class MainWindow : Window, IDisposable
 
             _softHide = clipr != null && !isFocusedOrHovered;
 
-            // Enable field ops mode when enabled and in a Eureka zone
-            _showFieldOpsTabs = Plugin.Configuration.SpecialFieldOps && HuntData.IsEurekaZone(HuntModel.Territory.ZoneId);
+            // Enable field ops mode when enabled and in a supported zone
+            _showEurekaTab = Plugin.Configuration.SpecialFieldOps && HuntData.IsEurekaZone(HuntModel.Territory.ZoneId);
+            _showOccultTab = Plugin.Configuration.SpecialFieldOps && HuntData.IsOccultZone(HuntModel.Territory.ZoneId);
 
             DrawMainWindow();
         }

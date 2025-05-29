@@ -194,7 +194,7 @@ public class Notifications : IDisposable
         HandleAutoOpen(scanResult.Rank, scanResult.MapX, scanResult.MapY);
     }
 
-    public void OnNewFate(ActiveFate fate)
+    public void OnNewFate(ScannedFate fate)
     {
         _coeurlHackFlag = false;
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -69,7 +70,7 @@ public class ScanResult
     public System.TimeSpan KillTimeAgo => Dead ? HuntModel.UtcNow - KillTimeUtc : System.TimeSpan.Zero;
 }
 
-public class ActiveFate
+public class ScannedFate
 {
     public bool Epic;
     public string Name = string.Empty;
@@ -80,6 +81,7 @@ public class ActiveFate
     public float MapY;
     public float ProgressPct;
     public bool Bonus;
+    [JsonIgnore] public bool Missing = true;
 
     public bool IsCE = false;
 
@@ -87,10 +89,12 @@ public class ActiveFate
     public bool Running = false;
 
     public System.DateTime FirstSeenTimeUtc;
+    public System.DateTime LastSeenTimeUtc;
     public System.DateTime EndTimeUtc;
 
     public System.TimeSpan FirstSeenAgo => HuntModel.UtcNow - FirstSeenTimeUtc;
     public System.TimeSpan TimeRemaining => Running ? (EndTimeUtc - HuntModel.UtcNow) : System.TimeSpan.Zero;
+    public System.TimeSpan LastSeenAgo => Missing ? HuntModel.UtcNow - LastSeenTimeUtc : System.TimeSpan.Zero;
 }
 
 public class KillCount
@@ -182,8 +186,17 @@ public static class HuntModel
 
     // --- Fields NOT stored in the zone cache
 
-    // A list of active FATEs
-    public static Dictionary<string, ActiveFate> ActiveFates = new();
+    // A list of active and previously seen FATEs
+    public static Dictionary<string, ScannedFate> Fates = new();
+
+    public static IEnumerable<KeyValuePair<string, ScannedFate>> ActiveFates =>
+        Fates.Where(f => !f.Value.Missing);
+
+    public static int ActiveFateCount =>
+        Fates.Count(f => !f.Value.Missing);
+
+    public static IEnumerable<ScannedFate> ActiveFateValues =>
+        Fates.Where(f => !f.Value.Missing).Select(f => f.Value);
 
     public static System.DateTime LastFailedFateUtc = System.DateTime.MinValue;
     public static string LastFailedFateName = string.Empty;

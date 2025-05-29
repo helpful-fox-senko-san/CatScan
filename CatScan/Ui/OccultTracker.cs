@@ -10,22 +10,22 @@ namespace CatScan.Ui;
 
 public partial class MainWindow : Window, IDisposable
 {
-    private void DrawEurekaTracker()
+	// Kind of hacky copy-paste of Eureka interface
+    private void DrawOccultTracker()
     {
-        using var tabId = ImRaii.PushId("EurekaTracker");
+        using var tabId = ImRaii.PushId("OccultTracker");
 
-        if (!HuntData.EurekaZones.TryGetValue(HuntModel.Territory.ZoneId, out var eurekaZone))
+        if (!HuntData.OccultZones.TryGetValue(HuntModel.Territory.ZoneId, out var occultZone))
             return;
 
-        using var table = ImRaii.Table("EurekaTable", 5, ImGuiTableFlags.Reorderable | ImGuiTableFlags.Resizable | ImGuiTableFlags.Hideable);
-        ImGui.TableSetupColumn("Lv.", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultSort);
-        ImGui.TableSetupColumn("NM Name", ImGuiTableColumnFlags.WidthStretch);
+        using var table = ImRaii.Table("OccultTracker", 5, ImGuiTableFlags.Reorderable | ImGuiTableFlags.Resizable | ImGuiTableFlags.Hideable);
+        ImGui.TableSetupColumn("CE Name", ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableSetupColumn("Mob Name", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.DefaultHide);
         ImGui.TableSetupColumn("KC ", ImGuiTableColumnFlags.WidthFixed);
         ImGui.TableSetupColumn("Time ", ImGuiTableColumnFlags.WidthFixed);
         ImGui.TableHeadersRow();
 
-        foreach (var nm in eurekaZone.NMs)
+        foreach (var ce in occultZone.CEs)
         {
             var color = _textColorGone;
             TimeSpan respawnIn = TimeSpan.Zero;
@@ -33,63 +33,14 @@ public partial class MainWindow : Window, IDisposable
             DateTime firstSeen = DateTime.MinValue;
             bool dead = false;
 
-            ScanResult? scanResult = null;
-            ScanResult? scanResult2 = null;
+            ScannedFate? scanResult = null;
 
             // XXX: Technically an implementation detail that its possible to get the scan results by name
-            HuntModel.ScanResults.TryGetValue(nm.NMName, out scanResult);
+            HuntModel.Fates.TryGetValue(ce.CEName, out scanResult);
 
-            // XXX: Brothers and Lumber Jack fates have multiple enemies...
-            //      Monster-based logic works OK here because Pagos and Pyros have infinite NM draw distance
-            if (nm.FateName == "Brothers")
+            if (scanResult != null)
             {
-                HuntModel.ScanResults.TryGetValue("Eldertaur", out scanResult2);
-
-                // Average the HP of each boss
-
-                if (scanResult != null)
-                {
-                    hpPct += scanResult.HpPct / 2.0f;
-                    firstSeen = scanResult.FirstSeenTimeUtc;
-                    dead = false;
-                }
-
-                if (scanResult2 != null)
-                {
-                    hpPct += scanResult2.HpPct / 2.0f;
-                    firstSeen = scanResult2.FirstSeenTimeUtc;
-                    dead = false;
-                }
-
-                dead = (hpPct == 0.0f);
-            }
-            else if (nm.FateName == "You Do Know Jack")
-            {
-                HuntModel.ScanResults.TryGetValue("Lumber Jack", out scanResult2);
-
-                // Combine boss somewhat HP proportionally (25% on willow, 75% on jack)
-
-                if (scanResult != null)
-                {
-                    hpPct = 75.0f + scanResult.HpPct * (1.0f / 4.0f);
-                    firstSeen = scanResult.FirstSeenTimeUtc;
-                    dead = false;
-                }
-
-                if (scanResult2 != null)
-                {
-                    hpPct = scanResult2.HpPct * (3.0f / 4.0f);
-                    firstSeen = scanResult2.FirstSeenTimeUtc;
-                    dead = false;
-                }
-
-                dead = (hpPct == 0.0f);
-            }
-            else if (scanResult != null)
-            {
-                // Generic logic for all other NMs
-                // Hydatos lacks infinite draw distance on NMs, but their scan results are synthesized
-                hpPct = scanResult.HpPct;
+                hpPct = 100.0f - scanResult.ProgressPct;
                 firstSeen = scanResult.FirstSeenTimeUtc;
                 dead = (hpPct == 0.0f);
             }
@@ -101,19 +52,6 @@ public partial class MainWindow : Window, IDisposable
             if (dead && scanResult != null)
             {
                 var respawnTime = TimeSpan.FromHours(2);
-
-                if (nm.NMName == "Ovni")
-                {
-                    // Ovni respawn is 30 minutes after death, rather than birth
-                    //  -or- only 20 minutes if it failed
-                    respawnTime = TimeSpan.FromMinutes(scanResult.HpPct == 0.0f ? 30 : 20);
-                    firstSeen = scanResult.LastSeenTimeUtc;
-                }
-                else if (nm.NMName == "Tristitia")
-                {
-                    // Support FATE respawn is... whenever people do BA
-                    respawnTime = TimeSpan.Zero;
-                }
 
                 respawnIn = respawnTime - (HuntModel.UtcNow - firstSeen);
                 if (respawnIn < TimeSpan.Zero)
@@ -137,19 +75,18 @@ public partial class MainWindow : Window, IDisposable
 
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
-            ImGui.Text(nm.Level.ToString());
-            ImGui.TableNextColumn();
 
-            var name = nm.NMName;
-
-            // XXX: More common names for NM encounters
-            if (name == "Mindertaur")
-                name = "Brothers";
-            else if (name == "The Weeping Willow")
-                name = "Lumber Jack";
+            var name = ce.CEName;
 
             var nameStr = GameData.TranslateBNpcName(name);
-            var kcNameStr = GameData.TranslateBNpcName(nm.KCName);
+            var kcNameStr = GameData.TranslateBNpcName(ce.KCName);
+            var kcShortName = kcNameStr;
+
+			// Hacky and English-specific
+			if (kcShortName.StartsWith("Crescent "))
+				kcShortName = kcShortName[9..];
+			else if (kcShortName.StartsWith("Occult "))
+				kcShortName = kcShortName[7..];
 
             if (scanResult == null)
             {
@@ -157,7 +94,7 @@ public partial class MainWindow : Window, IDisposable
                 using var pushColor2 = ImRaii.PushColor(ImGuiCol.Text, color2, color2 != Vector4.Zero);
                 ImGui.Text(nameStr);
             }
-            else if (scanResult.Dead)
+            else if (scanResult.Missing)
             {
                 var color2 = _textColorDead;
                 using var pushColor2 = ImRaii.PushColor(ImGuiCol.Text, color2, color2 != Vector4.Zero);
@@ -166,14 +103,14 @@ public partial class MainWindow : Window, IDisposable
             else
             {
                 if (hpPct < 100.0f)
-                    nameStr += $" (HP: {hpPct:F1}%)";
+                    nameStr += $" (HP: {hpPct:F0}%)";
                 nameStr += "##" + scanResult.EnglishName;
 
                 if (ImGui.Selectable(nameStr, false, ImGuiSelectableFlags.AllowItemOverlap))
                     GameFunctions.OpenMapLink(scanResult.MapX, scanResult.MapY);
             }
             ImGui.TableNextColumn();
-            ImGui.Text(kcNameStr);
+            ImGui.Text(kcShortName);
             ImGui.TableNextColumn();
             {
                 // TODO: Clickable KC mob location
@@ -184,7 +121,7 @@ public partial class MainWindow : Window, IDisposable
 
                     foreach (var r in HuntModel.KillCountLog)
                     {
-                        if (r.EnglishName == nm.KCName)
+                        if (r.EnglishName == ce.KCName)
                         {
                             kc = r;
                             break;
@@ -221,7 +158,7 @@ public partial class MainWindow : Window, IDisposable
             ImGui.TableNextColumn();
             if (scanResult != null)
             {
-                if (scanResult.Dead)
+                if (scanResult.Missing)
                 {
                     if (respawnIn == TimeSpan.Zero)
                     {
@@ -240,7 +177,7 @@ public partial class MainWindow : Window, IDisposable
 
                     foreach (var fate in HuntModel.ActiveFateValues)
                     {
-                        if (fate.EnglishName == nm.FateName)
+                        if (fate.EnglishName == ce.CEName)
                         {
                             activeFate = fate;
                             break;
@@ -249,6 +186,7 @@ public partial class MainWindow : Window, IDisposable
 
                     if (activeFate != null)
                     {
+						// TODO: Create a fake timer
                         var timeRemaining = activeFate.TimeRemaining;
                         // The fate has ended so it should not be visible anymore
                         if (timeRemaining <= TimeSpan.Zero)
