@@ -36,13 +36,14 @@ public partial class MainWindow : Window, IDisposable
         var eureka = (HuntModel.Territory.ZoneData.Expansion == Expansion.Eureka);
         var bozja = (HuntModel.Territory.ZoneId == 920);
         var zadnor = (HuntModel.Territory.ZoneId == 975);
+        var occult = (HuntModel.Territory.ZoneData.Expansion == Expansion.Occult);
 
         int rowNum = 1;
 
         foreach (var r in HuntModel.KillCountLog)
         {
-            // XXX: Hide zero-kill KC mobs in eureka
-            if (eureka && r.Killed == 0)
+            // XXX: Hide zero-kill KC mobs in eureka and occult crescent
+            if ((eureka || occult) && r.Killed == 0)
                 continue;
 
             ImGui.TableNextRow();
