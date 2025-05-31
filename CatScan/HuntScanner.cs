@@ -154,6 +154,8 @@ public class HuntScanner
     // Apply dynamic data from a scanned GameFate on to an existing Fate
     private void UpdateActiveFate(ScannedFate activeFate, GameFate gameFate)
     {
+        if (activeFate.Missing)
+            NewFate?.Invoke(activeFate);
         activeFate.RawX = gameFate.X;
         activeFate.RawZ = gameFate.Z;
         activeFate.MapX = ToMapOrd(gameFate.X, _zoneData.MapOffsetX, _zoneData.MapScale);
