@@ -11,6 +11,7 @@ public partial class ConfigWindow : Window, IDisposable
     public enum Tabs
     {
         Config,
+        FieldOp,
         Debug
     }
 
@@ -70,7 +71,8 @@ public partial class ConfigWindow : Window, IDisposable
 
         using var tabs = ImRaii.TabBar("ConfigWindowTabs");
         doTab("Config", Tabs.Config, DrawConfig);
-        doTab("Debug", Tabs.Config, DrawDebug);
+        doTab("Field Ops", Tabs.FieldOp, DrawFieldOp);
+        doTab("Debug", Tabs.Debug, DrawDebug);
     }
 
     public override void Draw()

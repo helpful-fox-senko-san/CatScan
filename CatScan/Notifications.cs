@@ -229,6 +229,19 @@ public class Notifications : IDisposable
             if (Plugin.Configuration.SoundEnabled && Plugin.Configuration.SoundAlertFATE)
                 Plugin.Notifications.PlaySfx("ping3.wav");
         }
+
+        // Optional ping / auto-map for Occult Crescent FATEs
+        if (HuntModel.Territory.ZoneData.Expansion == Expansion.Occult)
+        {
+            if (Plugin.Configuration.OccultSoundAlertFATE && !fate.IsCE)
+                Plugin.Notifications.PlaySfx("ping2.wav");
+
+            if (Plugin.Configuration.OccultAutoOpenFATE && !fate.IsCE)
+                OpenMapLink(fate.MapX, fate.MapY);
+
+            if (Plugin.Configuration.OccultAutoOpenCE && fate.IsCE)
+                OpenMapLink(fate.MapX, fate.MapY);
+        }
     }
 
     public void OnZoneChange()

@@ -179,19 +179,6 @@ public partial class ConfigWindow : Window, IDisposable
 
         ImGui.Separator();
 
-        b = Plugin.Configuration.SpecialFieldOps;
-        if (ImGui.Checkbox("Field Op tracker mode", ref b))
-        {
-            Plugin.Configuration.SpecialFieldOps = b;
-            Plugin.Configuration.Save();
-            if (Plugin.MainWindow.IsOpen)
-                Plugin.MainWindow.OpenTab(MainWindow.Tabs.ScanResults);
-        }
-
-        ImGui.TextWrapped("Enables special NM/CE tracker interface while inside Eureka or Occult Crescent zones.");
-
-        ImGui.Separator();
-
         if (_assemblyVersion == null)
             _assemblyVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version!.ToString();
 

@@ -36,6 +36,10 @@ public class Configuration : IPluginConfiguration
 
     public bool SpecialFieldOps { get; set; } = true;
 
+    public bool OccultSoundAlertFATE { get; set; } = false;
+    public bool OccultAutoOpenFATE { get; set; } = false;
+    public bool OccultAutoOpenCE { get; set; } = false;
+
     public void Save()
     {
         Task.Run(() => {
