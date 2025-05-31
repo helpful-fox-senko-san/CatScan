@@ -39,6 +39,7 @@ public class Configuration : IPluginConfiguration
     public bool OccultSoundAlertFATE { get; set; } = false;
     public bool OccultAutoOpenFATE { get; set; } = false;
     public bool OccultAutoOpenCE { get; set; } = false;
+    public bool OccultAutoOpenPotFATE { get; set; } = false;
 
     public void Save()
     {
