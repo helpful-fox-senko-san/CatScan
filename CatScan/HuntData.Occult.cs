@@ -36,21 +36,21 @@ public static partial class HuntData
     // Also provides the structure needed to format a custom UI
     public readonly static Dictionary<int, OccultZone> OccultZones = new(){
         {1252, OccultCEList( // South Horn
-            new OccultCE("Scourge of the Mind", "???"),
-            new OccultCE("The Black Regiment", "???"),
-            new OccultCE("The Unbridled", "???"),
-            new OccultCE("Crawling Death", "???"),
-            new OccultCE("Calamity Bound", "Crescent Inkstain"),
-            new OccultCE("Trial by Claw", "???"),
-            new OccultCE("From Times Bygone", "???"),
-            new OccultCE("Company of Stone", "???"),
-            new OccultCE("Shark Attack", "???"),
-            new OccultCE("On the Hunt", "???"),
-            new OccultCE("With Extreme Prejudice", "???"),
-            new OccultCE("Noise Complaint", "???"),
-            new OccultCE("Cursed Concern", "???"),
-            new OccultCE("Eternal Watch", "???"),
-            new OccultCE("Flame of Dusk", "???")
+            new OccultCE("Noise Complaint", "Crescent Garula"), // Lv1
+            new OccultCE("Company of Stone", "Crescent Marolith"), // Lv4
+            new OccultCE("On the Hunt", "Crescent Fan"), // Lv5
+            new OccultCE("Cursed Concern", "Crescent Karlabos"), // Lv6
+            new OccultCE("Shark Attack", "Crescent Petalodite"), // Lv7
+            new OccultCE("With Extreme Prejudice", "Crescent Uragnite"), // Lv8
+            new OccultCE("Flame of Dusk", "???"), // Lv 11/12 ?
+            new OccultCE("Trial by Claw", "???"), // Lv 12 ?
+            new OccultCE("From Times Bygone", "Crescent Byblos"), // Lv13
+            new OccultCE("The Black Regiment", "Crescent Panther"), // Lv14
+            new OccultCE("Scourge of the Mind", "Crescent Monk"), // Lv15
+            new OccultCE("Crawling Death", "Crescent Blackguard"), // Lv16
+            new OccultCE("The Unbridled", "Crescent Demon Pawn"), // Lv17
+            new OccultCE("Calamity Bound", "Crescent Inkstain"), // Lv20
+            new OccultCE("Eternal Watch", "???") // Lv20/21 ?
         )},
     };
 
