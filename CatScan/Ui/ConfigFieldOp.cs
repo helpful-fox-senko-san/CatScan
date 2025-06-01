@@ -58,6 +58,14 @@ public partial class ConfigWindow : Window, IDisposable
 					Plugin.Configuration.OccultAutoOpenCE = b;
 					Plugin.Configuration.Save();
 				}
+
+				ImGui.SameLine();
+				b = Plugin.Configuration.OccultAutoOpenPotFATE;
+				if (ImGui.Checkbox("Pot FATE", ref b))
+				{
+					Plugin.Configuration.OccultAutoOpenPotFATE = b;
+					Plugin.Configuration.Save();
+				}
 			}
 		}
 	}

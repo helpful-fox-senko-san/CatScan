@@ -236,10 +236,12 @@ public class Notifications : IDisposable
             if (Plugin.Configuration.OccultSoundAlertFATE && !fate.IsCE)
                 Plugin.Notifications.PlaySfx("ping2.wav");
 
-            if (Plugin.Configuration.OccultAutoOpenFATE && !fate.IsCE && fate.EnglishName != "Pleading Pots")
+            bool potFate = fate.EnglishName.EndsWith(" Pots");
+
+            if (Plugin.Configuration.OccultAutoOpenFATE && !fate.IsCE && !potFate)
                 OpenMapLink(fate.MapX, fate.MapY);
 
-            if (Plugin.Configuration.OccultAutoOpenPotFATE && !fate.IsCE && fate.EnglishName == "Pleading Pots")
+            if (Plugin.Configuration.OccultAutoOpenPotFATE && !fate.IsCE && potFate)
                 OpenMapLink(fate.MapX, fate.MapY);
 
             if (Plugin.Configuration.OccultAutoOpenCE && fate.IsCE)
