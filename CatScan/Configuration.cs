@@ -37,6 +37,8 @@ public class Configuration : IPluginConfiguration
     public bool SpecialFieldOps { get; set; } = true;
 
     public bool OccultSoundAlertFATE { get; set; } = false;
+    public bool OccultSoundAlertCE { get; set; } = false;
+    public bool OccultSoundAlertPotFATE { get; set; } = false;
     public bool OccultAutoOpenFATE { get; set; } = false;
     public bool OccultAutoOpenCE { get; set; } = false;
     public bool OccultAutoOpenPotFATE { get; set; } = false;
