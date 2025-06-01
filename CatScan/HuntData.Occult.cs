@@ -42,8 +42,8 @@ public static partial class HuntData
             new OccultCE("Cursed Concern", "Crescent Karlabos"), // Lv6
             new OccultCE("Shark Attack", "Crescent Petalodite"), // Lv7
             new OccultCE("With Extreme Prejudice", "Crescent Uragnite"), // Lv8
-            new OccultCE("Flame of Dusk", "???"), // Lv 11/12 ?
-            new OccultCE("Trial by Claw", "???"), // Lv 12 ?
+            new OccultCE("Flame of Dusk", "Crescent Rosebear"), // Lv 11
+            new OccultCE("Trial by Claw", "Crescent Aetherscab"), // Lv 12
             new OccultCE("From Times Bygone", "Crescent Byblos"), // Lv13
             new OccultCE("The Black Regiment", "Crescent Panther"), // Lv14
             new OccultCE("Scourge of the Mind", "Crescent Monk"), // Lv15
