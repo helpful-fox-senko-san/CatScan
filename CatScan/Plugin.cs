@@ -20,6 +20,7 @@ public sealed class Plugin : IDalamudPlugin
     public static Notifications Notifications { get; set; } = null!;
 
     public static bool BetweenAreas => _gameScanner.BetweenAreas || _gameScanner.BetweenZones;
+    public static bool Occupied => _gameScanner.Occupied;
 
     public Plugin(IDalamudPluginInterface pluginInterface)
     {

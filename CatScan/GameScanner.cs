@@ -175,11 +175,13 @@ public class GameScanner : IDisposable
     private int _instance = -1;
     private bool _betweenAreas = false;
     private bool _betweenZones = false;
+    private bool _occupied = false;
     private bool _territoryChanged = false;
     private bool _scanningEnabled = false;
 
     public bool BetweenAreas => _betweenAreas;
     public bool BetweenZones => _betweenZones;
+    public bool Occupied => _occupied;
 
     // Expose some state for debugging
     internal int EnemyCacheSize => _enemyCache.Count;
@@ -472,6 +474,11 @@ public class GameScanner : IDisposable
         {
             // Can't open the map while between areas, so track this too
             _betweenAreas = value;
+        }
+        else if (flag == ConditionFlag.Occupied33)
+        {
+            // Can't open the map in this state
+            _occupied = value;
         }
     }
 

@@ -60,8 +60,9 @@ public class Notifications : IDisposable
             for (int retries = 0; retries < 10; ++retries)
             {
                 // Avoid spamming error text while we're teleporting
-                if (!Plugin.BetweenAreas && await GameFunctions.OpenMapLink(mapX, mapY))
-                    break;
+                if (!Plugin.BetweenAreas && !Plugin.Occupied)
+                    if (await GameFunctions.OpenMapLink(mapX, mapY))
+                        break;
 
                 await mapRetryTimer.WaitForNextTickAsync();
             }
