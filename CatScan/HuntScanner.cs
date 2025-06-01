@@ -366,7 +366,12 @@ public class HuntScanner
         }
         else
         {
-            HuntModel.LastEndedCEUtc = HuntModel.UtcNow;
+            // Large scale battles do not influence the global cooldown
+            if (!HuntData.LargeScaleBattles.Contains(fate.EnglishName)
+             && !HuntData.OccultLargeScaleBattles.Contains(fate.EnglishName))
+            {
+                HuntModel.LastEndedCEUtc = HuntModel.UtcNow;
+            }
 
             if (HuntModel.Fates.TryGetValue(fate.EnglishName, out var activeFate))
             {
