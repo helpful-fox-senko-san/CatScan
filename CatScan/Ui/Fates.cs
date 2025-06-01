@@ -206,34 +206,36 @@ public partial class MainWindow : Window, IDisposable
     private void DrawFates()
     {
         DrawFateTable();
-
         // Fate fail timer for Southern Thanalan
         if (HuntModel.Territory.ZoneId == 146)
+            DrawNunyTime();
+    }
+
+    private void DrawNunyTime()
+    {
+        var span = HuntModel.UtcNow - HuntModel.LastFailedFateUtc;
+        span = TimeSpan.FromSeconds(System.Math.Floor(span.TotalSeconds));
+        ImGuiHelpers.CenteredText(span.ToString());
+
+        if (HuntModel.LastFailedFateName.Length > 0)
         {
-            var span = HuntModel.UtcNow - HuntModel.LastFailedFateUtc;
-            span = TimeSpan.FromSeconds(System.Math.Floor(span.TotalSeconds));
-            ImGuiHelpers.CenteredText(span.ToString());
+            var tw1 = (int)ImGui.CalcTextSize("Failed: " + HuntModel.LastFailedFateName).X;
+            var tw2 = (int)ImGui.CalcTextSize("Dismiss").X;
+            var ww = (int)ImGui.GetWindowWidth();
 
-            if (HuntModel.LastFailedFateName.Length > 0)
             {
-                var tw1 = (int)ImGui.CalcTextSize("Failed: " + HuntModel.LastFailedFateName).X;
-                var tw2 = (int)ImGui.CalcTextSize("Dismiss").X;
-                var ww = (int)ImGui.GetWindowWidth();
-
-                {
-                    using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
-                    ImGuiHelpers.CenterCursorFor(tw1);
-                    ImGui.Text("Failed: " + HuntModel.LastFailedFateName);
-                }
-
-                if ((ww - tw1) / 2 < tw2 + 24)
-                    ImGuiHelpers.CenterCursorFor(tw2);
-                else
-                    ImGui.SameLine();
-
-                if (ImGui.SmallButton("Dismiss##DismissFateFailed"))
-                    HuntModel.LastFailedFateName = string.Empty;
+                using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
+                ImGuiHelpers.CenterCursorFor(tw1);
+                ImGui.Text("Failed: " + HuntModel.LastFailedFateName);
             }
+
+            if ((ww - tw1) / 2 < tw2 + 24)
+                ImGuiHelpers.CenterCursorFor(tw2);
+            else
+                ImGui.SameLine();
+
+            if (ImGui.SmallButton("Dismiss##DismissFateFailed"))
+                HuntModel.LastFailedFateName = string.Empty;
         }
     }
 }

@@ -233,10 +233,16 @@ public class Notifications : IDisposable
         // Optional ping / auto-map for Occult Crescent FATEs
         if (HuntModel.Territory.ZoneData.Expansion == Expansion.Occult)
         {
-            if (Plugin.Configuration.OccultSoundAlertFATE && !fate.IsCE)
+            bool potFate = fate.EnglishName.EndsWith(" Pots");
+
+            if (Plugin.Configuration.OccultSoundAlertFATE && !fate.IsCE && !potFate)
                 Plugin.Notifications.PlaySfx("ping2.wav");
 
-            bool potFate = fate.EnglishName.EndsWith(" Pots");
+            if (Plugin.Configuration.OccultSoundAlertPotFATE && !fate.IsCE && potFate)
+                Plugin.Notifications.PlaySfx("ping1.wav");
+
+            if (Plugin.Configuration.OccultSoundAlertCE && fate.IsCE)
+                Plugin.Notifications.PlaySfx("ping3.wav");
 
             if (Plugin.Configuration.OccultAutoOpenFATE && !fate.IsCE && !potFate)
                 OpenMapLink(fate.MapX, fate.MapY);

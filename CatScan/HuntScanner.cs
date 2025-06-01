@@ -360,19 +360,19 @@ public class HuntScanner
                 SynthesizeLostEurekaNM(hydatosFate, fate);
         }
 
-        // TODO: uncomment this
-        /*
         if (!fate.IsCE)
         {
             HuntModel.Fates.Remove(fate.EnglishName, out _);
-            return;
         }
-        */
-
-        if (HuntModel.Fates.TryGetValue(fate.EnglishName, out var activeFate))
+        else
         {
-            activeFate.ProgressPct = fate.ProgressPct;
-            activeFate.Missing = true;
+            HuntModel.LastEndedCEUtc = HuntModel.UtcNow;
+
+            if (HuntModel.Fates.TryGetValue(fate.EnglishName, out var activeFate))
+            {
+                activeFate.ProgressPct = fate.ProgressPct;
+                activeFate.Missing = true;
+            }
         }
     }
 
@@ -434,6 +434,7 @@ public class HuntScanner
         HuntModel.Fates.Clear();
         HuntModel.LastFailedFateUtc = HuntModel.UtcNow;
         HuntModel.LastFailedFateName = string.Empty;
+        HuntModel.LastEndedCEUtc = System.DateTime.MinValue;
 
         // Clear non-A rank monsters
         //todo...

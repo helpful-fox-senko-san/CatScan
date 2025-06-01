@@ -10,8 +10,15 @@ namespace CatScan.Ui;
 
 public partial class MainWindow : Window, IDisposable
 {
-	// Kind of hacky copy-paste of Eureka interface
+    // Kind of hacky copy-paste of Eureka interface
     private void DrawOccultTracker()
+    {
+        DrawOccultCETable();
+        // 3 minute global cooldown after each CE ends
+        DrawCECooldown();
+    }
+
+    private void DrawOccultCETable()
     {
         using var tabId = ImRaii.PushId("OccultTracker");
 
@@ -41,8 +48,10 @@ public partial class MainWindow : Window, IDisposable
             if (scanResult != null)
             {
                 hpPct = 100.0f - scanResult.ProgressPct;
+                if (scanResult.Missing)
+                    hpPct = 0.0f;
                 firstSeen = scanResult.FirstSeenTimeUtc;
-                dead = (hpPct == 0.0f) || scanResult.Missing;
+                dead = (hpPct == 0.0f);
             }
             else
             {
@@ -82,11 +91,11 @@ public partial class MainWindow : Window, IDisposable
             var kcNameStr = GameData.TranslateBNpcName(ce.KCName);
             var kcShortName = kcNameStr;
 
-			// Hacky and English-specific
-			if (kcShortName.StartsWith("Crescent "))
-				kcShortName = kcShortName[9..];
-			else if (kcShortName.StartsWith("Occult "))
-				kcShortName = kcShortName[7..];
+            // Hacky and English-specific
+            if (kcShortName.StartsWith("Crescent "))
+                kcShortName = kcShortName[9..];
+            else if (kcShortName.StartsWith("Occult "))
+                kcShortName = kcShortName[7..];
 
             if (scanResult == null)
             {
@@ -186,7 +195,7 @@ public partial class MainWindow : Window, IDisposable
 
                     if (activeFate != null)
                     {
-						// TODO: Create a fake timer
+                        // TODO: Create a fake timer
                         var timeRemaining = activeFate.TimeRemaining;
                         // The fate has ended so it should not be visible anymore
                         if (timeRemaining <= TimeSpan.Zero)
@@ -211,5 +220,18 @@ public partial class MainWindow : Window, IDisposable
                 ImGui.Text("-");
             }
         }
+    }
+
+    private void DrawCECooldown()
+    {
+        if (HuntModel.LastEndedCEUtc == DateTime.MinValue)
+            return;
+        var span = HuntModel.LastEndedCEUtc - HuntModel.UtcNow;
+        var secs = System.Math.Floor(span.TotalSeconds) + 180;
+        if (secs < 0)
+            return;
+        span = TimeSpan.FromSeconds(secs);
+        using var pushColor = ImRaii.PushColor(ImGuiCol.Text, _textColorDead);
+        ImGuiHelpers.CenteredText(span.ToString());
     }
 }

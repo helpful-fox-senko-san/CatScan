@@ -198,8 +198,12 @@ public static class HuntModel
     public static IEnumerable<ScannedFate> ActiveFateValues =>
         Fates.Where(f => !f.Value.Missing).Select(f => f.Value);
 
+    // Last failed FATE info for Southern Thanalan
     public static System.DateTime LastFailedFateUtc = System.DateTime.MinValue;
     public static string LastFailedFateName = string.Empty;
+
+    // Last ended CE time for
+    public static System.DateTime LastEndedCEUtc = System.DateTime.MinValue;
 
     // --- Page data in and out for per-zone persistence
 
