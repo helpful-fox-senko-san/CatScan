@@ -234,23 +234,25 @@ public class Notifications : IDisposable
         if (HuntModel.Territory.ZoneData.Expansion == Expansion.Occult)
         {
             bool potFate = fate.EnglishName.EndsWith(" Pots");
+            bool largeScale = HuntData.OccultLargeScaleBattles.Contains(fate.EnglishName);
+            bool isCE = fate.IsCE && !largeScale;
 
-            if (Plugin.Configuration.OccultSoundAlertFATE && !fate.IsCE && !potFate)
+            if (Plugin.Configuration.OccultSoundAlertFATE && !isCE && !potFate)
                 Plugin.Notifications.PlaySfx("ping2.wav");
 
-            if (Plugin.Configuration.OccultSoundAlertPotFATE && !fate.IsCE && potFate)
+            if (Plugin.Configuration.OccultSoundAlertPotFATE && !isCE && potFate)
                 Plugin.Notifications.PlaySfx("ping1.wav");
 
-            if (Plugin.Configuration.OccultSoundAlertCE && fate.IsCE)
+            if (Plugin.Configuration.OccultSoundAlertCE && isCE)
                 Plugin.Notifications.PlaySfx("ping3.wav");
 
-            if (Plugin.Configuration.OccultAutoOpenFATE && !fate.IsCE && !potFate)
+            if (Plugin.Configuration.OccultAutoOpenFATE && !isCE && !potFate)
                 OpenMapLink(fate.MapX, fate.MapY);
 
-            if (Plugin.Configuration.OccultAutoOpenPotFATE && !fate.IsCE && potFate)
+            if (Plugin.Configuration.OccultAutoOpenPotFATE && !isCE && potFate)
                 OpenMapLink(fate.MapX, fate.MapY);
 
-            if (Plugin.Configuration.OccultAutoOpenCE && fate.IsCE)
+            if (Plugin.Configuration.OccultAutoOpenCE && isCE)
                 OpenMapLink(fate.MapX, fate.MapY);
         }
     }
