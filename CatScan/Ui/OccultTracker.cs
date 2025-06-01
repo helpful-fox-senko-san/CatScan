@@ -42,7 +42,7 @@ public partial class MainWindow : Window, IDisposable
             {
                 hpPct = 100.0f - scanResult.ProgressPct;
                 firstSeen = scanResult.FirstSeenTimeUtc;
-                dead = (hpPct == 0.0f);
+                dead = (hpPct == 0.0f) || scanResult.Missing;
             }
             else
             {
