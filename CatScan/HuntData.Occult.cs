@@ -50,7 +50,7 @@ public static partial class HuntData
             new OccultCE("Crawling Death", "Crescent Blackguard"), // Lv16
             new OccultCE("The Unbridled", "Crescent Demon Pawn"), // Lv17
             new OccultCE("Calamity Bound", "Crescent Inkstain"), // Lv20
-            new OccultCE("Eternal Watch", "???") // Lv20/21 ?
+            new OccultCE("Eternal Watch", "Crescent Lion Statant") // Lv20 ?
         )},
     };
 
