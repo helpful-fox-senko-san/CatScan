@@ -234,23 +234,24 @@ public class Notifications : IDisposable
         // Optional ping / auto-map for Occult Crescent FATEs
         if (HuntModel.Territory.ZoneData.Expansion == Expansion.Occult)
         {
-            bool potFate = fate.EnglishName.EndsWith(" Pots");
-            bool largeScale = HuntData.OccultLargeScaleBattles.Contains(fate.EnglishName);
-            bool isCE = fate.IsCE && !largeScale;
+            bool isPotFATE = fate.EnglishName.EndsWith(" Pots");
+            bool isLargeScale = HuntData.OccultLargeScaleBattles.Contains(fate.EnglishName);
+            bool isCE = fate.IsCE && !isLargeScale;
+            bool isFATE = !fate.IsCE && !isPotFATE;
 
-            if (Plugin.Configuration.OccultSoundAlertFATE && !isCE && !potFate)
+            if (Plugin.Configuration.OccultSoundAlertFATE && isFATE)
                 Plugin.Notifications.PlaySfx("ping2.wav");
 
-            if (Plugin.Configuration.OccultSoundAlertPotFATE && !isCE && potFate)
+            if (Plugin.Configuration.OccultSoundAlertPotFATE && isPotFATE)
                 Plugin.Notifications.PlaySfx("ping1.wav");
 
             if (Plugin.Configuration.OccultSoundAlertCE && isCE)
                 Plugin.Notifications.PlaySfx("ping3.wav");
 
-            if (Plugin.Configuration.OccultAutoOpenFATE && !isCE && !potFate)
+            if (Plugin.Configuration.OccultAutoOpenFATE && isFATE)
                 OpenMapLink(fate.MapX, fate.MapY);
 
-            if (Plugin.Configuration.OccultAutoOpenPotFATE && !isCE && potFate)
+            if (Plugin.Configuration.OccultAutoOpenPotFATE && isPotFATE)
                 OpenMapLink(fate.MapX, fate.MapY);
 
             if (Plugin.Configuration.OccultAutoOpenCE && isCE)
