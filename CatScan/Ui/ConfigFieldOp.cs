@@ -61,11 +61,11 @@ public partial class ConfigWindow : Window, IDisposable
                 }
             }
 
-            ImGui.TextUnformatted("Open Window Automatically");
+            ImGui.TextUnformatted("Open Map Flag Automatically");
 
-            using (var autoOpenIndent = ImRaii.PushIndent(24.0f))
+            using (var autoFlagIndent = ImRaii.PushIndent(24.0f))
             {
-                using var autoOpenId = ImRaii.PushId("AutoOpen");
+                using var autoFlagId = ImRaii.PushId("AutoFlag");
 
                 b = Plugin.Configuration.OccultAutoOpenFATE;
                 if (ImGui.Checkbox("FATE", ref b))

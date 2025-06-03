@@ -39,6 +39,7 @@ public class Configuration : IPluginConfiguration
     public bool OccultSoundAlertFATE { get; set; } = false;
     public bool OccultSoundAlertCE { get; set; } = false;
     public bool OccultSoundAlertPotFATE { get; set; } = false;
+    // Oops! This actually means "AutoFlag"
     public bool OccultAutoOpenFATE { get; set; } = false;
     public bool OccultAutoOpenCE { get; set; } = false;
     public bool OccultAutoOpenPotFATE { get; set; } = false;
