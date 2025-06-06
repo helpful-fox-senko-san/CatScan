@@ -209,6 +209,9 @@ public partial class MainWindow : Window, IDisposable
         // Fate fail timer for Southern Thanalan
         if (HuntModel.Territory.ZoneId == 146)
             DrawNunyTime();
+        else if (HuntModel.Territory.ZoneData.Expansion == Expansion.Occult)
+            DrawCECooldown();
+
     }
 
     private void DrawNunyTime()
