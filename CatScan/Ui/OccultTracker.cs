@@ -5,6 +5,7 @@ using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Dalamud.Utility;
 
 namespace CatScan.Ui;
 
@@ -61,6 +62,9 @@ public partial class MainWindow : Window, IDisposable
             if (dead && scanResult != null)
             {
                 var respawnTime = TimeSpan.FromHours(2);
+
+                if (ce.CEName == "Calamity Bound")
+                    respawnTime = TimeSpan.FromHours(1);
 
                 respawnIn = respawnTime - (HuntModel.UtcNow - firstSeen);
                 if (respawnIn < TimeSpan.Zero)
@@ -121,6 +125,7 @@ public partial class MainWindow : Window, IDisposable
             ImGui.TableNextColumn();
             ImGui.Text(kcShortName);
             ImGui.TableNextColumn();
+            if (!ce.KCName.IsNullOrEmpty())
             {
                 // TODO: Clickable KC mob location
 
@@ -147,12 +152,12 @@ public partial class MainWindow : Window, IDisposable
                     }
                     else
                     {
-                        ImGui.Text("-  ");
+                        ImGui.Text("-   ");
                     }
                 }
                 else
                 {
-                    ImGui.Text("-  ");
+                    ImGui.Text("-   ");
                 }
 
                 // XXX: The hover area for table text seems broken

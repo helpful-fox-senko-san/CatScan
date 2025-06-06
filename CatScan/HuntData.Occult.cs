@@ -36,21 +36,21 @@ public static partial class HuntData
     // Also provides the structure needed to format a custom UI
     public readonly static Dictionary<int, OccultZone> OccultZones = new(){
         {1252, OccultCEList( // South Horn
-            new OccultCE("Noise Complaint", "Crescent Garula"), // Lv1
-            new OccultCE("Company of Stone", "Crescent Marolith"), // Lv4
-            new OccultCE("On the Hunt", "Crescent Fan"), // Lv5
-            new OccultCE("Cursed Concern", "Crescent Karlabos"), // Lv6
-            new OccultCE("Shark Attack", "Crescent Petalodite"), // Lv7
-            new OccultCE("With Extreme Prejudice", "Crescent Uragnite"), // Lv8
-            new OccultCE("Flame of Dusk", "Crescent Rosebear"), // Lv 11
-            new OccultCE("Trial by Claw", "Crescent Aetherscab"), // Lv 12
-            new OccultCE("From Times Bygone", "Crescent Byblos"), // Lv13
-            new OccultCE("The Black Regiment", "Crescent Panther"), // Lv14
-            new OccultCE("Scourge of the Mind", "Crescent Monk"), // Lv15
-            new OccultCE("Crawling Death", "Crescent Blackguard"), // Lv16
-            new OccultCE("The Unbridled", "Crescent Demon Pawn"), // Lv17
-            new OccultCE("Calamity Bound", "Crescent Inkstain"), // Lv20
-            new OccultCE("Eternal Watch", "Crescent Lion Statant") // Lv20 ?
+            new OccultCE("Noise Complaint", "Crescent Garula"),
+            new OccultCE("Company of Stone", ""),
+            new OccultCE("On the Hunt", "Crescent Fan"),
+            new OccultCE("Cursed Concern", ""),
+            new OccultCE("Shark Attack", "Crescent Petalodite"),
+            new OccultCE("With Extreme Prejudice", ""),
+            new OccultCE("Trial by Claw", "Crescent Aetherscab"),
+            new OccultCE("Flame of Dusk", ""),
+            new OccultCE("From Times Bygone", "Crescent Byblos"),
+            new OccultCE("The Black Regiment", "Crescent Panther"),
+            new OccultCE("Scourge of the Mind", "Crescent Monk"),
+            new OccultCE("Crawling Death", ""),
+            new OccultCE("The Unbridled", ""),
+            new OccultCE("Eternal Watch", ""),
+            new OccultCE("Calamity Bound", "Crescent Inkstain")
         )},
     };
 
