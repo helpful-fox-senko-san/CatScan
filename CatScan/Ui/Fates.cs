@@ -1,7 +1,7 @@
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -128,7 +128,7 @@ public partial class MainWindow : Window, IDisposable
             {
                 ImGui.SameLine();
                 if (_iconCE != null)
-                    ImGui.Image(_iconCE.GetWrapOrEmpty().ImGuiHandle, new Vector2(16.0f, 16.0f));
+                    ImGui.Image(_iconCE.GetWrapOrEmpty().Handle, new Vector2(16.0f, 16.0f));
                 else
                     ImGui.Text("[CE]");
             }

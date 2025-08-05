@@ -1,7 +1,7 @@
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -321,7 +321,7 @@ public partial class MainWindow : Window, IDisposable
 
             if (icon != null)
             {
-                ImGui.Image(icon.GetWrapOrEmpty().ImGuiHandle, new(16, 16));
+                ImGui.Image(icon.GetWrapOrEmpty().Handle, new(16, 16));
                 ImGui.SameLine();
             }
 

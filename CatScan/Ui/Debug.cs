@@ -1,6 +1,6 @@
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System;
 using CatScan.FFXIV;
 
