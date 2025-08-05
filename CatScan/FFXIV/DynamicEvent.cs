@@ -48,7 +48,7 @@ public unsafe partial struct DynamicEventManager
 
             try
             {
-                addr = DalamudService.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 85 C0 74 11 48 8B D6");
+                addr = DalamudService.SigScanner.ScanText("E8 ?? ?? ?? ?? 48 8B E8 48 85 C0 74 ?? 0F B7 56");
             }
             catch (Exception e)
             {

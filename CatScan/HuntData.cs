@@ -290,16 +290,16 @@ public static partial class HuntData
         {1188, DT_Zone("Kozama'uka", 1,
             B("The Slammer"), B("Go'ozoabek'be"), A("Pkuucha"), A("The Raintriller"), S("Ihnuxokiy")
         )},
-        {1189, DT_Zone("Yak T'el", 2,
+        {1189, DT_Zone("Yak T'el", 1,
             B("Leafsource Hadoll Ja"), B("Xty'iinbek"), A("Starcrier"), A("Rrax Yity'a"), S("Neyoozoteel")
         )},
-        {1190, DT_Zone("Shaaloani", 1,
+        {1190, DT_Zone("Shaaloani", 2,
             B("Nopalitender Fabuloso"), B("Uktena"), A("Yehehetoaua'pyo"), A("Keheniheyamewi"), S("Sansheya"), FATE("Ttokrrone")
         )},
-        {1191, DT_Zone("Heritage Found", 1,
+        {1191, DT_Zone("Heritage Found", 3,
             B("Gallowsbeak"), B("Gargant"), A("Heshuala"), A("Urna Variabilis"), S("Atticus the Primogenitor")
         )},
-        {1192, DT_Zone("Living Memory", 1,
+        {1192, DT_Zone("Living Memory", 2,
             B("Jewel Bearer"), B("13th Child"), A("Sally the Sweeper"), A("Cat's Eye"), S("The Forecaster"), FATE("Mica the Magical Mu")
         )},
 
