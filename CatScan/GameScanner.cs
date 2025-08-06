@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using CatScan.FFXIV;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 
 namespace CatScan;
 
@@ -494,9 +495,22 @@ public class GameScanner : IDisposable
         if (maxHp > 0)
             hpPct = (float)bnpc.CurrentHp / (float)maxHp * 100.0f;
 
-        var newEnemy = new GameEnemy(){
+        var nameId = bnpc.NameId;
+
+        // Patch 7.3, 2025-08-05
+        if (DalamudService.ClientLanguage < 4 && DalamudService.GameVersion == "2025.07.30.0000.0000")
+        {
+            unsafe
+            {
+                var chara = (Character*)bnpc.Address;
+                nameId = *(uint*)((byte*)chara + 0x2328);
+            }
+        }
+
+        var newEnemy = new GameEnemy()
+        {
             ObjectId = id,
-            NameId = bnpc.NameId,
+            NameId = nameId,
             _cachedName = GameData.IsEnglish ? null : bnpc.Name.ToString(),
             X = pos.X,
             Z = pos.Z,

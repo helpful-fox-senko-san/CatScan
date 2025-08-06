@@ -18,8 +18,17 @@ public class DalamudService
     [PluginService] public static ISigScanner SigScanner { get; private set; } = null!;
     [PluginService] public static ITextureProvider TextureProvider { get; private set; } = null!;
 
+    public static uint ClientLanguage = 0;
+    public static string GameVersion = string.Empty;
+
     public static void Initialize(IDalamudPluginInterface pluginInterface)
     {
         pluginInterface.Create<DalamudService>();
+        unsafe
+        {
+            var framework = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance();
+            ClientLanguage = framework->ClientLanguage;
+            GameVersion = framework->GameVersionString;
+        }
     }
 }

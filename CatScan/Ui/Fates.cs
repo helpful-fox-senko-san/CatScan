@@ -56,7 +56,7 @@ public partial class MainWindow : Window, IDisposable
         if (ImGui.IsItemHovered())
         {
             using var tt = ImRaii.Tooltip();
-            ImGui.Text("Progress %%");
+            ImGui.TextUnformatted("Progress %");
         }
         ImGui.TableNextColumn();
         ImGui.TableHeader("Dist.");
@@ -148,18 +148,18 @@ public partial class MainWindow : Window, IDisposable
             {
                 if (pctVisible)
                 {
-                    ImGui.Text(f.ProgressPct.ToString("0.\\%\\%"));
+                    ImGui.TextUnformatted(f.ProgressPct.ToString("0.\\%"));
                 }
                 else
                 {
                     ImGui.SameLine();
-                    ImGui.Text(f.ProgressPct.ToString("\\(0.\\%\\%\\)"));
+                    ImGui.TextUnformatted(f.ProgressPct.ToString("\\(0.\\%\\)"));
                 }
             }
             else
             {
                 if (pctVisible)
-                    ImGui.Text("0%%");
+                    ImGui.TextUnformatted("0%");
             }
 
             if (!pctVisible)
